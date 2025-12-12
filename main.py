@@ -133,7 +133,7 @@ def add_XO(board, to_move):
             return board, to_move
 
     mini_board = board[large_row][large_col]
-    if len(mini_board) == 4:
+    if len(mini_board) > 3:
         to_move[1] = None
         return board, to_move
 
@@ -145,13 +145,13 @@ def add_XO(board, to_move):
             # Switch player
             to_move[0] = "O" if to_move[0] == "X" else "X"
             to_move[1] = (mini_row, mini_col)
-            if len(board[mini_row][mini_col]) == 4:
+            if len(board[mini_row][mini_col]) > 3:
                 to_move[1] = None
 
     # Check for mini board winner
     winner = check_board_winner(mini_board)
     if winner:
-        board[large_row][large_col] += [winner]
+        mini_board += [winner]
         if to_move[1] == (large_row, large_col):
             to_move[1] = None
 
@@ -185,7 +185,7 @@ def render_board(board, x_mini_img, o_mini_img):
                             img.get_rect(center=(px, py)),
                         ]
 
-            if len(board[i][j]) == 4:
+            if len(board[i][j]) > 3:
                 winning_img = get_winning_img(board[i][j][3])
                 if winning_img:
                     winning_rect = winning_img.get_rect(
@@ -270,7 +270,7 @@ def draw_game(board):
                         )
 
             # If the large block was won by someone
-            if len(graphical_board[i][j]) > 4:
+            if len(graphical_board[i][j]) > 3:
                 SCREEN.blit(
                     graphical_board[i][j][3][0],
                     graphical_board[i][j][3][1],
@@ -299,4 +299,3 @@ def generate_board():
 
 if __name__ == "__main__":
     main()
-
