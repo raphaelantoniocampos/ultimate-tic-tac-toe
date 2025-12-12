@@ -70,6 +70,7 @@ def main():
                 if not game_finished:
                     # Adds X/O
                     board, to_move = add_XO(board, to_move)
+                    print(to_move)
 
                     render_board(board, X_IMG, O_IMG)
 
@@ -152,8 +153,9 @@ def add_XO(board, to_move):
     # Check for mini board winner
     winner = check_board_winner(mini_board)
     if winner:
-        to_move[1] = None
         board[large_row][large_col] = winner
+        if to_move[1] == (large_row, large_col):
+            to_move[1] = None
 
     return board, to_move
 
@@ -200,23 +202,27 @@ def get_winning_img(winner):
 
     if winner == "X":
         return WINNING_X_IMG
-    elif winner == "O":
+    if winner == "O":
         return WINNING_O_IMG
-    elif winner == "D":
+    if winner == "D":
         return DRAW_IMG
-    else:
-        return None
+    return None
 
 
 def check_board_winner(board):
     # Check rows and columns
     for mi in range(3):
         # Lines
-        if board[mi][0] == board[mi][1] == board[mi][2] and board[mi][0] not in [
-            0,
-            1,
-            2,
-        ]:
+        if (
+            isinstance(board[mi][0], str)
+            and board[mi][0] == board[mi][1] == board[mi][2]
+            and board[mi][0]
+            not in [
+                0,
+                1,
+                2,
+            ]
+        ):
             winner = board[mi][0]
             return winner
 
