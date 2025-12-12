@@ -70,7 +70,6 @@ def main():
                 if not game_finished:
                     # Adds X/O
                     board, to_move = add_XO(board, to_move)
-                    print(to_move)
 
                     render_board(board, X_IMG, O_IMG)
 
@@ -78,7 +77,6 @@ def main():
                         break
 
                     # winner = check_board_winner(board)
-                    # print(winner)
                     # if winner is not None:
                     #     game_finished = True
 
@@ -125,9 +123,9 @@ def add_XO(board, to_move):
         mini_row = 2
 
     # DEBUG
-    print(
-        f"MINI BOARD: [{large_row}][{large_col}] | MINI-CELL [{mini_row}][{mini_col}]"
-    )
+    # print(
+    #     f"MINI BOARD: [{large_row}][{large_col}] | MINI-CELL [{mini_row}][{mini_col}]"
+    # )
 
     # Determine valid move
     if to_move[1]:
@@ -135,7 +133,7 @@ def add_XO(board, to_move):
             return board, to_move
 
     mini_board = board[large_row][large_col]
-    if isinstance(mini_board, str):
+    if len(mini_board) == 4:
         to_move[1] = None
         return board, to_move
 
@@ -147,13 +145,13 @@ def add_XO(board, to_move):
             # Switch player
             to_move[0] = "O" if to_move[0] == "X" else "X"
             to_move[1] = (mini_row, mini_col)
-            if isinstance(board[mini_row][mini_col], str):
+            if len(board[mini_row][mini_col]) == 4:
                 to_move[1] = None
 
     # Check for mini board winner
     winner = check_board_winner(mini_board)
     if winner:
-        board[large_row][large_col] = winner
+        board[large_row][large_col] += [winner]
         if to_move[1] == (large_row, large_col):
             to_move[1] = None
 
@@ -170,31 +168,30 @@ def render_board(board, x_mini_img, o_mini_img):
             center_x = j * CELL_SIZE + offset
             center_y = i * CELL_SIZE + offset
 
-            # If board contains mini board
-            if isinstance(board[i][j], list):
-                for mi in range(3):
-                    for mj in range(3):
-                        mark = board[i][j][mi][mj]
+            for mi in range(3):
+                for mj in range(3):
+                    mark = board[i][j][mi][mj]
 
-                        if (
-                            isinstance(mark, str)
-                            and graphical_board[i][j][mi][mj][0] is None
-                        ):
-                            img = x_mini_img if mark == "X" else o_mini_img
-                            px = center_x + (mj - 1) * mini_spacing
-                            py = center_y + (mi - 1) * mini_spacing
+                    if (
+                        isinstance(mark, str)
+                        and graphical_board[i][j][mi][mj][0] is None
+                    ):
+                        img = x_mini_img if mark == "X" else o_mini_img
+                        px = center_x + (mj - 1) * mini_spacing
+                        py = center_y + (mi - 1) * mini_spacing
 
-                            graphical_board[i][j][mi][mj] = [
-                                img,
-                                img.get_rect(center=(px, py)),
-                            ]
+                        graphical_board[i][j][mi][mj] = [
+                            img,
+                            img.get_rect(center=(px, py)),
+                        ]
 
-            # if board is won or draw
-            else:
+            if len(board[i][j]) == 4:
                 winning_img = get_winning_img(board[i][j])
                 if winning_img:
-                    winning_rect = winning_img.get_rect(center=(center_x, center_y))
-                    graphical_board[i][j] = (winning_img, winning_rect)
+                    winning_rect = winning_img.get_rect(
+                        center=(center_x, center_y),
+                    )
+                    graphical_board[i][j] += [winning_img, winning_rect]
 
 
 def get_winning_img(winner):
@@ -213,16 +210,11 @@ def check_board_winner(board):
     # Check rows and columns
     for mi in range(3):
         # Lines
-        if (
-            isinstance(board[mi][0], str)
-            and board[mi][0] == board[mi][1] == board[mi][2]
-            and board[mi][0]
-            not in [
-                0,
-                1,
-                2,
-            ]
-        ):
+        if board[mi][0] == board[mi][1] == board[mi][2] and board[mi][0] not in [
+            0,
+            1,
+            2,
+        ]:
             winner = board[mi][0]
             return winner
 
@@ -265,24 +257,24 @@ def draw_game(board):
     # Scroll through large cells
     for i in range(3):
         for j in range(3):
-            # If the large cell contains a list, we draw the mini cells
-            if isinstance(graphical_board[i][j], list):
-                # Case where graphical_board[i][j] is a 3x3 matrix of mini-cells
-                for mi in range(3):
-                    for mj in range(3):
-                        # Checks if there is an image and a rect defined
-                        if (
-                            graphical_board[i][j][mi][mj] is not None
-                            and graphical_board[i][j][mi][mj][0] is not None
-                        ):
-                            SCREEN.blit(
-                                graphical_board[i][j][mi][mj][0],
-                                graphical_board[i][j][mi][mj][1],
-                            )
+            for mi in range(3):
+                for mj in range(3):
+                    # Checks if there is an image and a rect defined
+                    if (
+                        graphical_board[i][j][mi][mj] is not None
+                        and graphical_board[i][j][mi][mj][0] is not None
+                    ):
+                        SCREEN.blit(
+                            graphical_board[i][j][mi][mj][0],
+                            graphical_board[i][j][mi][mj][1],
+                        )
 
-            # If the large block was won by someone
-            elif graphical_board[i][j][0] is not None:
-                SCREEN.blit(graphical_board[i][j][0], graphical_board[i][j][1])
+        # If the large block was won by someone
+        if len(graphical_board[i][j]) == 4:
+            SCREEN.blit(
+                graphical_board[i][j][3][0],
+                graphical_board[i][j][3][1],
+            )
 
 
 def generate_board():
@@ -307,3 +299,4 @@ def generate_board():
 
 if __name__ == "__main__":
     main()
+
