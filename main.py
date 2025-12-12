@@ -186,12 +186,12 @@ def render_board(board, x_mini_img, o_mini_img):
                         ]
 
             if len(board[i][j]) == 4:
-                winning_img = get_winning_img(board[i][j])
+                winning_img = get_winning_img(board[i][j][3])
                 if winning_img:
                     winning_rect = winning_img.get_rect(
                         center=(center_x, center_y),
                     )
-                    graphical_board[i][j] += [winning_img, winning_rect]
+                    graphical_board[i][j] += [(winning_img, winning_rect)]
 
 
 def get_winning_img(winner):
@@ -269,12 +269,12 @@ def draw_game(board):
                             graphical_board[i][j][mi][mj][1],
                         )
 
-        # If the large block was won by someone
-        if len(graphical_board[i][j]) == 4:
-            SCREEN.blit(
-                graphical_board[i][j][3][0],
-                graphical_board[i][j][3][1],
-            )
+            # If the large block was won by someone
+            if len(graphical_board[i][j]) > 4:
+                SCREEN.blit(
+                    graphical_board[i][j][3][0],
+                    graphical_board[i][j][3][1],
+                )
 
 
 def generate_board():
