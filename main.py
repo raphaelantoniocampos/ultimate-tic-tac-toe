@@ -76,9 +76,11 @@ def main():
                     if not to_move[0]:
                         break
 
-                    # winner = check_board_winner(board)
-                    # if winner is not None:
-                    #     game_finished = True
+                    board_state = get_board_state(board)
+                    winner = check_board_winner(board_state)
+
+                    if isinstance(winner, str):
+                        game_finished = True
 
                 else:
                     # Restarts game next click
@@ -208,23 +210,23 @@ def get_winning_img(winner):
 
 def check_board_winner(board):
     # Check rows and columns
-    for mi in range(3):
+    for i in range(3):
         # Lines
-        if board[mi][0] == board[mi][1] == board[mi][2] and board[mi][0] not in [
+        if board[i][0] == board[i][1] == board[i][2] and board[i][0] not in [
             0,
             1,
             2,
         ]:
-            winner = board[mi][0]
+            winner = board[i][0]
             return winner
 
         # Columns
-        if board[0][mi] == board[1][mi] == board[2][mi] and board[0][mi] not in [
+        if board[0][i] == board[1][i] == board[2][i] and board[0][i] not in [
             0,
             3,
             6,
         ]:
-            winner = board[0][mi]
+            winner = board[0][i]
             return winner
 
     # Check diagonals
@@ -295,6 +297,23 @@ def generate_board():
 
         board.append(line)
     return board
+
+
+def get_board_state(board):
+    board_state = []
+    for i in range(3):
+        row = []
+        for j in range(3):
+            mini_board = board[i][j]
+            if len(mini_board) > 3:
+                winner = mini_board[3]
+            else:
+                winner = None
+
+            row.append(winner)
+        board_state.append(row)
+
+    return board_state
 
 
 if __name__ == "__main__":
