@@ -10,6 +10,14 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 BG_COLOR = (214, 201, 227)
 
+BOARD_OFFSET = 100
+CELL_SIZE = 230
+MINI_CELL_SIZE = 75
+
+HIGHLIGHT_COLOR = (255, 255, 100)
+HIGHLIGHT_BORDER_WIDTH = 5
+HIGHLIGHT_PADDING = 35
+
 INIT_GRAPHICAL_BOARD = [
     [[[[None, None] for _ in range(3)] for _ in range(3)] for _ in range(3)]
     for _ in range(3)
@@ -17,26 +25,24 @@ INIT_GRAPHICAL_BOARD = [
 
 # Load assets
 BOARD = pygame.image.load("assets/board.png")
-
-x_img = pygame.image.load("assets/X.png")
+x_img = pygame.image.load("assets/x.png")
 X_IMG = pygame.transform.scale(
     x_img,
     ((x_img.get_width() * 0.25), (x_img.get_height() * 0.25)),
 )
-o_img = pygame.image.load("assets/O.png")
+o_img = pygame.image.load("assets/o.png")
 O_IMG = pygame.transform.scale(
     o_img,
     ((o_img.get_width() * 0.245), (o_img.get_height() * 0.245)),
 )
-
 WINNING_X_IMG = pygame.image.load("assets/light_x.png")
 WINNING_O_IMG = pygame.image.load("assets/light_o.png")
 DRAW_IMG = pygame.image.load("assets/draw.png")
+MINI_DRAW_IMG = pygame.transform.scale(
+    DRAW_IMG,
+    ((DRAW_IMG.get_width() * 0.245), (DRAW_IMG.get_height() * 0.245)),
+)
 
-BOARD_OFFSET = 100
-CELL_SIZE = 230
-
-MINI_CELL_SIZE = 75
 
 # global board
 graphical_board = copy.deepcopy(INIT_GRAPHICAL_BOARD)
@@ -45,10 +51,18 @@ graphical_board = copy.deepcopy(INIT_GRAPHICAL_BOARD)
 def main():
     pygame.init()
 
+    title_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 32)
+    game_state_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 24)
+    button_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 20)
+
     pygame.display.set_caption("Ultimate Tic Tac Toe!")
 
+    title = title_font.render("Ultimate Tic Tac Toe", True, (20, 20, 20))
+    title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 18))
+
     # Start game variables
-    to_move = ["X", None]  # Who starts and playable area limits
+    # Who starts and playable area limits
+    to_move, player_img = ["X", None], X_IMG
     game_finished = False
 
     # board = copy.deepcopy(INIT_BOARD)
@@ -60,6 +74,12 @@ def main():
 
     pygame.display.update()
 
+    game_state_text = "PLAYER:"
+    game_state = game_state_font.render(game_state_text, True, (20, 20, 20))
+
+    button_rect = None
+
+    starting_game = True
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -67,32 +87,84 @@ def main():
 
             # Player action
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if not game_finished:
+                x, y = pygame.mouse.get_pos()
+                if (
+                    (game_finished or starting_game)
+                    and button_rect
+                    and button_rect.collidepoint(x, y)
+                ):
+                    starting_game = False
+                    global graphical_board
+                    board = generate_board()
+                    graphical_board = copy.deepcopy(INIT_GRAPHICAL_BOARD)
+                    to_move = ["X", None]
+                    game_finished = False
+                    game_state_text = "PLAYER:"
+                    player_img = X_IMG
+                    break
+
+                if not game_finished and not starting_game:
                     # Adds X/O
                     board, to_move = add_XO(board, to_move)
 
-                    render_board(board, X_IMG, O_IMG)
+                    render_board(board)
 
                     if not to_move[0]:
                         break
 
                     board_state = get_board_state(board)
                     winner = check_board_winner(board_state)
+                    player_img = get_player_image(to_move[0])
 
                     if isinstance(winner, str):
+                        player_img = get_player_image(winner)
+                        game_state_text = "WINNER"
+                        to_move[1] = None
+                        if winner == "D":
+                            game_state_text = "DRAW"
                         game_finished = True
 
-                else:
-                    # Restarts game next click
-                    # board = copy.deepcopy(INIT_BOARD)
-                    board = generate_board()
-                    global graphical_board
-                    graphical_board = copy.deepcopy(INIT_GRAPHICAL_BOARD)
-                    to_move = ["X", None]
-                    game_finished = False
-
         # Draws the game
-        draw_game(board)
+        draw_game(board, to_move)
+
+        if starting_game:
+            button_rect = draw_button(
+                SCREEN,
+                "START",
+                button_font,
+                WIDTH // 2,
+                HEIGHT // 2,
+            )
+
+        elif game_finished:
+            button_rect = draw_button(
+                SCREEN,
+                "RESTART",
+                button_font,
+                WIDTH // 2,
+                HEIGHT // 2,
+            )
+        else:
+            button_rect = None
+
+        game_state = game_state_font.render(
+            game_state_text,
+            True,
+            (20, 20, 20),
+        )
+        SCREEN.blit(title, title_rect)
+        SCREEN.blit(
+            game_state,
+            game_state.get_rect(
+                center=((WIDTH // 2) - WIDTH // 21, (HEIGHT // 18) * 17)
+            ),
+        )
+        SCREEN.blit(
+            player_img,
+            player_img.get_rect(
+                center=((WIDTH // 2) + WIDTH // 21, (HEIGHT // 18) * 17)
+            ),
+        )
 
         # Refreshes the screen
         pygame.display.update()
@@ -125,9 +197,9 @@ def add_XO(board, to_move):
         mini_row = 2
 
     # DEBUG
-    # print(
-    #     f"MINI BOARD: [{large_row}][{large_col}] | MINI-CELL [{mini_row}][{mini_col}]"
-    # )
+    print(
+        f"MINI BOARD: [{large_row}][{large_col}] | MINI-CELL [{mini_row}][{mini_col}]"
+    )
 
     # Determine valid move
     if to_move[1]:
@@ -160,7 +232,7 @@ def add_XO(board, to_move):
     return board, to_move
 
 
-def render_board(board, x_mini_img, o_mini_img):
+def render_board(board):
     global graphical_board
     mini_spacing = 55
     offset = 220
@@ -178,7 +250,7 @@ def render_board(board, x_mini_img, o_mini_img):
                         isinstance(mark, str)
                         and graphical_board[i][j][mi][mj][0] is None
                     ):
-                        img = x_mini_img if mark == "X" else o_mini_img
+                        img = get_player_image(mark)
                         px = center_x + (mj - 1) * mini_spacing
                         py = center_y + (mi - 1) * mini_spacing
 
@@ -188,7 +260,7 @@ def render_board(board, x_mini_img, o_mini_img):
                         ]
 
             if len(board[i][j]) > 3:
-                winning_img = get_winning_img(board[i][j][3])
+                winning_img = get_winner_image(board[i][j][3])
                 if winning_img:
                     winning_rect = winning_img.get_rect(
                         center=(center_x, center_y),
@@ -196,7 +268,17 @@ def render_board(board, x_mini_img, o_mini_img):
                     graphical_board[i][j] += [(winning_img, winning_rect)]
 
 
-def get_winning_img(winner):
+def get_player_image(player):
+    if player == "X":
+        return X_IMG
+    if player == "O":
+        return O_IMG
+    if player == "D":
+        return MINI_DRAW_IMG
+    return None
+
+
+def get_winner_image(winner):
     global WINNING_X_IMG, WINNING_O_IMG
 
     if winner == "X":
@@ -209,54 +291,83 @@ def get_winning_img(winner):
 
 
 def check_board_winner(board):
-    # Check rows and columns
+    winner = ""
+    lines = []
+
+    # Rows and Columns
     for i in range(3):
-        # Lines
-        if board[i][0] == board[i][1] == board[i][2] and board[i][0] not in [
-            0,
-            1,
-            2,
-        ]:
-            winner = board[i][0]
-            return winner
-
+        # Rows
+        lines.append([board[i][0], board[i][1], board[i][2]])
         # Columns
-        if board[0][i] == board[1][i] == board[2][i] and board[0][i] not in [
-            0,
-            3,
-            6,
-        ]:
-            winner = board[0][i]
-            return winner
+        lines.append([board[0][i], board[1][i], board[2][i]])
 
-    # Check diagonals
+    # Diagonals
+    lines.append([board[0][0], board[1][1], board[2][2]])
+    lines.append([board[0][2], board[1][1], board[2][0]])
 
-    # Diagonal (0,0), (1,1), (2,2)
-    if board[0][0] == board[1][1] == board[2][2] and board[0][0] not in [0]:
-        winner = board[0][0]
-        return winner
+    # Win Condition
+    for line in lines:
+        # Count X's, O's and D's in the line
+        count_x = line.count("X")
+        count_o = line.count("O")
+        count_d = line.count("D")
 
-    # Diagonal (0,2), (1,1), (2,0)
-    if board[0][2] == board[1][1] == board[2][0] and board[0][2] not in [2]:
-        winner = board[0][2]
-        return winner
+        if (
+            (count_x == 3)
+            or (count_x == 2 and count_d == 1)
+            or (count_x == 1 and count_d == 2)
+        ):
+            winner = "X"
 
-    # Check draw
+        if (
+            (count_o == 3)
+            or (count_o == 2 and count_d == 1)
+            or (count_o == 1 and count_d == 2)
+        ):
+            if winner == "X":
+                winner = "D"
+            else:
+                winner = "O"
+
+    has_unresolved_mini_board = False
     for row in board:
-        for cell in row:
-            if cell not in ["X", "O"]:
-                return None
+        if has_unresolved_mini_board := any(isinstance(n, int) for n in row):
+            break
 
-    return "D"
+    if not winner and not has_unresolved_mini_board:
+        winner = "D"
+
+    if not winner:
+        winner = None
+
+    return winner
 
 
-def draw_game(board):
+def draw_game(board, to_move):
     global graphical_board
     # Clear the screen and draw the main board
     SCREEN.fill(BG_COLOR)
     SCREEN.blit(BOARD, (64, 64))
 
-    # Scroll through large cells
+    if to_move[1] is not None:
+        row, col = to_move[1]
+        offset = 220
+        center_x = col * CELL_SIZE + offset
+        center_y = row * CELL_SIZE + offset
+
+        highlight_size = CELL_SIZE - (HIGHLIGHT_PADDING * 2)
+
+        pygame.draw.rect(
+            surface=SCREEN,
+            color=HIGHLIGHT_COLOR,
+            rect=(
+                int(center_x - (highlight_size / 2)),
+                int(center_y - (highlight_size / 2)),
+                highlight_size,
+                highlight_size,
+            ),
+            width=HIGHLIGHT_BORDER_WIDTH,
+        )
     for i in range(3):
         for j in range(3):
             for mi in range(3):
@@ -301,6 +412,7 @@ def generate_board():
 
 def get_board_state(board):
     board_state = []
+    counter = 0
     for i in range(3):
         row = []
         for j in range(3):
@@ -308,12 +420,32 @@ def get_board_state(board):
             if len(mini_board) > 3:
                 winner = mini_board[3]
             else:
-                winner = None
+                winner = counter
+            counter += 1
 
             row.append(winner)
         board_state.append(row)
 
     return board_state
+
+
+def draw_button(screen, text, font, center_x, center_y):
+    button_width = 180
+    button_height = 50
+    text_surface = font.render(text, True, (255, 255, 255))
+    text_rect = text_surface.get_rect(center=(center_x, center_y))
+
+    button_rect = pygame.Rect(
+        center_x - (button_width / 2),
+        center_y - (button_height / 2),
+        button_width,
+        button_height,
+    )
+    pygame.draw.rect(screen, (50, 50, 50), button_rect, border_radius=5)
+
+    screen.blit(text_surface, text_rect)
+
+    return button_rect
 
 
 if __name__ == "__main__":
