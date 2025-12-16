@@ -125,7 +125,7 @@ def main():
                         game_finished = True
 
         # Draws the game
-        draw_game(board, to_move)
+        draw_game(to_move)
 
         if starting_game:
             button_rect = draw_button(
@@ -343,7 +343,7 @@ def check_board_winner(board):
     return winner
 
 
-def draw_game(board, to_move):
+def draw_game(to_move):
     global graphical_board
     # Clear the screen and draw the main board
     SCREEN.fill(BG_COLOR)
