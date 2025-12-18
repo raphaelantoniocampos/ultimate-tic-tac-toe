@@ -32,13 +32,15 @@ class GameSession:
         for role, conn in list(self.players.items()):
             try:
                 conn.send(pickle.dumps(data))
-            except:
+            except Exception as e:
+                print(f"Error broadcasting to {role}: {e}")
                 self.remove_player(role)
         # Send to spectators
         for conn in list(self.spectators):
             try:
                 conn.send(pickle.dumps(data))
-            except:
+            except Exception as e:
+                print(f"Error broadcasting to spectator: {e}")
                 self.spectators.remove(conn)
 
     def remove_player(self, role):
@@ -116,11 +118,6 @@ def handle_client(conn, addr):
             if role == "SPECTATOR":
                 continue  # Spectators only listen
 
-            # request = pickle.loads(data)
-            # command = request[0]
-            # if not data:
-            #      break
-
             try:
                 move = pickle.loads(data)
                 with current_game.lock:
@@ -133,7 +130,8 @@ def handle_client(conn, addr):
                             current_game.board = new_board
                             current_game.to_move = new_to_move
 
-                            board_state = game.get_board_state(current_game.board)
+                            board_state = game.get_board_state(
+                                current_game.board)
                             winner = game.check_board_winner(board_state)
 
                             # broadcast(("UPDATE", board, to_move))
@@ -150,11 +148,9 @@ def handle_client(conn, addr):
                                 current_game.broadcast(("GAME_OVER", winner))
                                 current_game.winner = winner
             except Exception as e:
-                print(f"Error processing move in game {current_game.game_id}: {e}")
-                # print(f"Error processing move: {e}")
+                print(f"Error processing move in game {
+                      current_game.game_id}: {e}")
 
-        # except:
-        # break
     except Exception as e:
         print(f"Connection error with {addr}: {e}")
     finally:
@@ -162,40 +158,24 @@ def handle_client(conn, addr):
             with current_game.lock:
                 if role in ["X", "O"]:
                     print(
-                        f"Player {role} disconnected from game {current_game.game_id}"
+                        f"Player {role} disconnected from game {
+                            current_game.game_id}"
                     )
                     current_game.remove_player(role)
-                    # Optional: Notify others of disconnect?
+                    # Notify others of disconnect
+                    current_game.broadcast(("OPPONENT_LEFT",))
                 elif role == "SPECTATOR":
                     if conn in current_game.spectators:
                         current_game.spectators.remove(conn)
         conn.close()
 
-    # print(f"Player {player} disconnected")
-    # if conn in clients:
-    #     clients.remove(conn)
-    # conn.close()
-
 
 def start():
     print(f"Server started on {HOST}:{PORT}")
-    # print("Waiting for players...")
-    #
-    # player_symbols = ["X", "O"]
-    #
-    # while len(clients) < 2:
     while True:
         conn, addr = server.accept()
-        # print(f"Connected by {addr}")
-        # clients.append(conn)
-        #
-        # player = player_symbols[len(clients) - 1]
-        # thread = threading.Thread(target=handle_client, args=(conn, player))
-
         thread = threading.Thread(target=handle_client, args=(conn, addr))
         thread.start()
-
-    # print("Game starting!")
 
 
 if __name__ == "__main__":
