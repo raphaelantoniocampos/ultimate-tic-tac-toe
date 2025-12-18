@@ -94,14 +94,15 @@ def apply_move(board, to_move, move_indices):
     # Determine valid move
     if required_next_move:
         if required_next_move != (large_row, large_col):
-            return board, to_move, False  # Invalid move: Wrong large cell
+            # Invalid move: Wrong large cell
+            return board, [player, required_next_move], False
 
     mini_board = board[large_row][large_col]
 
     # Check for mini board winner
     if len(mini_board) > 3:
-        to_move[1] = None
-        return board, to_move, False
+        required_next_move = None
+        return board, [player, required_next_move], False
 
     if not isinstance(mini_board[mini_row][mini_col], int):
         return board, to_move, False
