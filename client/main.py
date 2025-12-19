@@ -4,6 +4,7 @@ import socket
 import threading
 
 import pygame
+import platform
 import game
 
 # --- CONSTANTS ---
@@ -22,8 +23,20 @@ FILL_COLOR = (50, 50, 50)
 HIGHLIGHT_COLOR = (215, 205, 100)
 
 # Network
+# Default to localhost for local development
 HOST = "127.0.0.1"
 PORT = 5555
+
+# Detect if we are running in a browser
+if platform.system() == "Emscripten":
+    import js
+    # Get the hostname from the browser's location
+    browser_host = js.window.location.hostname
+    if browser_host and browser_host != "localhost" and browser_host != "127.0.0.1":
+        HOST = browser_host
+        # Note: In browser environment, you might need to connect via WebSockets 
+        # or use a proxy. Pygbag handles some of this, but HOST must point to the server.
+        print(f"Detected browser environment, connecting to {HOST}")
 
 # Initialize Pygame
 pygame.init()
@@ -65,7 +78,8 @@ game_status = "MENU"  # MENU, WAITING, GAME, FINISHED
 winner = None
 game_id = ""
 input_text = ""
-client_socket = None
+client_reader = None
+client_writer = None
 error = ""
 
 
@@ -89,11 +103,15 @@ def get_winner_image(winner_player):
     return None
 
 
-def connect_and_listen():
+async def connect_and_listen():
     global game_status, my_player, board, to_move, winner, error
     while True:
         try:
-            data = client_socket.recv(4096 * 4)
+            # Data length is not provided, but we can read until EOF or use a large buffer
+            # pickle usually needs the full data.
+            # For simplicity, we assume the server sends encapsulated packets if needed, 
+            # but here we follow the existing pickle logic.
+            data = await client_reader.read(4096 * 4)
             if not data:
                 break
             msg = pickle.loads(data)
@@ -391,19 +409,21 @@ def draw_game_window():
     return exit_btn
 
 
-def perform_handshake(command, payload=None):
-    global game_id, my_player, game_status, error, client_socket, graphcial_board, board, to_move
+async def perform_handshake(command, payload=None):
+    global game_id, my_player, game_status, error, client_reader, client_writer, board, to_move
     
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        client_socket.connect((HOST, PORT))
+        client_reader, client_writer = await asyncio.open_connection(HOST, PORT)
     except Exception as e:
         print(f"Could not connect to server: {e}")
         return False
 
     if command == "CREATE":
-        client_socket.send(pickle.dumps(("CREATE",)))
-        resp = pickle.loads(client_socket.recv(4096))
+        client_writer.write(pickle.dumps(("CREATE",)))
+        await client_writer.drain()
+        
+        data = await client_reader.read(4096)
+        resp = pickle.loads(data)
         # ("CREATED", game_id, role)
         game_id = resp[1]
         my_player = resp[2]
@@ -411,8 +431,11 @@ def perform_handshake(command, payload=None):
         return True
 
     elif command == "JOIN":
-        client_socket.send(pickle.dumps(("JOIN", payload)))
-        resp = pickle.loads(client_socket.recv(4096))
+        client_writer.write(pickle.dumps(("JOIN", payload)))
+        await client_writer.drain()
+        
+        data = await client_reader.read(4096)
+        resp = pickle.loads(data)
 
         if resp[0] == "ERROR":
             error = resp[1]
@@ -427,7 +450,7 @@ def perform_handshake(command, payload=None):
 
 
 def reset_game():
-    global board, graphical_board, to_move, my_player, game_finished, game_status, winner, game_id, input_text, error
+    global board, graphical_board, to_move, my_player, game_finished, game_status, winner, game_id, input_text, error, client_writer
     
     board = game.generate_board()
     graphical_board = [
@@ -442,12 +465,11 @@ def reset_game():
     winner = None
     game_id = ""
     error = ""
-    # Don't reset input_text so user can easily re-join if needed or clear it? Let's clear it.
     input_text = ""
     
-    if client_socket:
+    if client_writer:
         try:
-            client_socket.close()
+            client_writer.close()
         except:
             pass
 
@@ -470,18 +492,14 @@ async def main():
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if create_btn.collidepoint(event.pos):
-                        if perform_handshake("CREATE"):
-                            # Start listener thread
-                            thread = threading.Thread(
-                                target=connect_and_listen, daemon=True)
-                            thread.start()
+                        if await perform_handshake("CREATE"):
+                            # Start listener task
+                            asyncio.create_task(connect_and_listen())
 
                     elif join_btn.collidepoint(event.pos):
                         if input_text:
-                            if perform_handshake("JOIN", input_text):
-                                thread = threading.Thread(
-                                    target=connect_and_listen, daemon=True)
-                                thread.start()
+                            if await perform_handshake("JOIN", input_text):
+                                asyncio.create_task(connect_and_listen())
 
                     elif quit_btn.collidepoint(event.pos):
                         # Quit game
@@ -529,17 +547,19 @@ async def main():
                                 move = (large_row, large_col,
                                         mini_row, mini_col)
                                 try:
-                                    client_socket.send(pickle.dumps(move))
+                                    client_writer.write(pickle.dumps(move))
+                                    await client_writer.drain()
                                 except Exception as e:
-                                    print(f"Error sendint move ({move}): {e}")
+                                    print(f"Error sending move ({move}): {e}")
                                     pass
 
         pygame.display.update()
         await asyncio.sleep(0)
         clock.tick(30)
     try:
-        if client_socket:
-            client_socket.close()
+        if client_writer:
+            client_writer.close()
+            await client_writer.wait_closed()
     except Exception as e:
         print(f"Error closing socket: {e}")
         pass
