@@ -8,7 +8,7 @@ from pathlib import Path
 # Add the parent directory to sys.path to allow importing from 'client'
 sys.path.append(str(Path(__file__).parent.parent))
 
-from client import game
+from client import logic as game
 
 HOST = "0.0.0.0"
 PORT = 5555
@@ -153,8 +153,7 @@ def handle_client(conn, addr):
                                 current_game.broadcast(("GAME_OVER", winner))
                                 current_game.winner = winner
             except Exception as e:
-                print(f"Error processing move in game {
-                      current_game.game_id}: {e}")
+                print(f"Error processing move in game {current_game.game_id}: {e}")
 
     except Exception as e:
         print(f"Connection error with {addr}: {e}")
@@ -163,9 +162,7 @@ def handle_client(conn, addr):
             with current_game.lock:
                 if role in ["X", "O"]:
                     print(
-                        f"Player {role} disconnected from game {
-                            current_game.game_id}"
-                    )
+                        f"Player {role} disconnected from game {current_game.game_id}")
                     current_game.remove_player(role)
                     # Notify others of disconnect
                     current_game.broadcast(("OPPONENT_LEFT",))

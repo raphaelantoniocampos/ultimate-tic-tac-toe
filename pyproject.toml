@@ -3,7 +3,7 @@ name = "ultimate-tac-toe"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "pygame>=2.6.1",
     "pygbag>=0.9.2",

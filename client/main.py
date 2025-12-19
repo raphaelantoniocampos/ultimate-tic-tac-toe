@@ -3,9 +3,26 @@ import pickle
 import socket
 import threading
 
+import sys
+import os
+
+# Fix for WASM/Pygbag import issues
+# If running in Emscripten, ensure we can import local modules
+if sys.platform == "emscripten":
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        if current_dir not in sys.path:
+            sys.path.insert(0, current_dir)
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+        print(f"DEBUG: sys.path updated: {sys.path}")
+    except Exception as e:
+        print(f"DEBUG: Error updating sys.path: {e}")
+
 import pygame
 import platform
-import game
+import logic as game
 
 # --- CONSTANTS ---
 WIDTH, HEIGHT = 900, 900
@@ -27,15 +44,11 @@ HIGHLIGHT_COLOR = (215, 205, 100)
 HOST = "127.0.0.1"
 PORT = 5555
 
-# Detect if we are running in a browser
 if platform.system() == "Emscripten":
     import js
-    # Get the hostname from the browser's location
     browser_host = js.window.location.hostname
     if browser_host and browser_host != "localhost" and browser_host != "127.0.0.1":
         HOST = browser_host
-        # Note: In browser environment, you might need to connect via WebSockets 
-        # or use a proxy. Pygbag handles some of this, but HOST must point to the server.
         print(f"Detected browser environment, connecting to {HOST}")
 
 # Initialize Pygame
@@ -107,10 +120,6 @@ async def connect_and_listen():
     global game_status, my_player, board, to_move, winner, error
     while True:
         try:
-            # Data length is not provided, but we can read until EOF or use a large buffer
-            # pickle usually needs the full data.
-            # For simplicity, we assume the server sends encapsulated packets if needed, 
-            # but here we follow the existing pickle logic.
             data = await client_reader.read(4096 * 4)
             if not data:
                 break
@@ -290,7 +299,7 @@ def draw_game_window():
     # Title roughly consistent
     title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 1)))
-    
+
     # Game ID - Top Left
     id_text = game_state_font.render(f"ID: {game_id}", True, TEXT_COLOR)
     id_rect = id_text.get_rect(topleft=(20, HEIGHT_SLICE * 1))
@@ -302,19 +311,19 @@ def draw_game_window():
     if my_player in ["X", "O"]:
         you_text_str = "You: "
         you_img = X_IMG if my_player == "X" else O_IMG
-        
+
         txt_surf = game_state_font.render(you_text_str, True, TEXT_COLOR)
         txt_rect = txt_surf.get_rect()
-        
+
         # Position top right
         end_x = WIDTH - 20
         y_pos = HEIGHT_SLICE * 1
-        
+
         img_rect = you_img.get_rect()
         img_rect.midright = (end_x, y_pos)
-        
+
         txt_rect.midright = (img_rect.left - 10, y_pos)
-        
+
         SCREEN.blit(txt_surf, txt_rect)
         SCREEN.blit(you_img, img_rect)
     elif my_player == "SPECTATOR":
@@ -322,11 +331,10 @@ def draw_game_window():
         spec_rect = spec_text.get_rect(midright=(WIDTH - 20, HEIGHT_SLICE * 1))
         SCREEN.blit(spec_text, spec_rect)
 
-
     # Bottom Status Construction
     status_text_str = ""
     status_img = None
-    
+
     if game_status == "FINISHED":
         if error == "Opponent Disconnected":
             status_text_str = "Opponent Disconnected"
@@ -340,78 +348,64 @@ def draw_game_window():
                 status_img = O_IMG
     elif game_status == "GAME":
         if my_player == "SPECTATOR":
-             status_text_str = f"Turn: "
+            status_text_str = f"Turn: "
         else:
             if to_move[0] == my_player:
-                status_text_str = "Your Turn (" 
+                status_text_str = "Your Turn ("
             else:
                 status_text_str = "Opponent Turn ("
-        
-        # The image for whose turn it is
+
         if to_move[0] == "X":
             status_img = X_IMG
         else:
             status_img = O_IMG
-            
+
         if my_player != "SPECTATOR":
-            # Add closing parenthesis via a separate text or just imply it by proximity?
-            # Let's simplify: "Turn: [Image]" is cleanest, but user wants "Your Turn"
-            # Let's do: "Your Turn" [Image] or "Opponent Turn" [Image]
             if to_move[0] == my_player:
-                 status_text_str = "Your Turn: "
+                status_text_str = "Your Turn: "
             else:
-                 status_text_str = "Opponent Turn: "
-    
+                status_text_str = "Opponent Turn: "
 
     # Render Bottom Status
     bottom_center = (WIDTH // 2, HEIGHT_SLICE * 17)
-    
+
     if status_img:
         # Text left of image
         txt_surf = game_state_font.render(status_text_str, True, TEXT_COLOR)
         txt_rect = txt_surf.get_rect()
-        
+
         # Calculate total width to center
         total_width = txt_rect.width + status_img.get_width() + 10
         start_x = bottom_center[0] - (total_width // 2)
-        
+
         # Blit Text
         txt_rect.topleft = (start_x, bottom_center[1] - txt_rect.height // 2)
         SCREEN.blit(txt_surf, txt_rect)
-        
+
         # Blit Image
         img_rect = status_img.get_rect()
         img_rect.midleft = (txt_rect.right + 10, txt_rect.centery)
         SCREEN.blit(status_img, img_rect)
-            
+
     else:
         # Just text
         status = game_state_font.render(status_text_str, True, TEXT_COLOR)
         SCREEN.blit(status, status.get_rect(center=bottom_center))
 
-    # Exit Button 
-    # Use HEIGHT_SLICE logic
+    # Exit Button
     exit_btn = pygame.Rect(0, 0, 120, 40)
-    # Bottom Right? or Center Bottom below status?
-    # User asked for consistent positioning.
-    # Previous it was (WIDTH - 80, HEIGHT - 40).
-    # Let's keep it bottom right or move to bottom center below status (might be too crowded).
-    # Let's put it on slice 17 but far right? or Slice 16?
-    # Actually, let's stick to bottom right but use slices for Y margin reference slightly.
-    # HEIGHT = 18 slices. Slice 17 is center of bottom status.
-    # Slice 17 y is 850.
     exit_btn.center = (WIDTH - 80, HEIGHT_SLICE * 17)
-    
+
     pygame.draw.rect(SCREEN, FILL_COLOR, exit_btn, border_radius=5)
     exit_text = game_state_font.render("Exit", True, BG_COLOR)
     SCREEN.blit(exit_text, exit_text.get_rect(center=exit_btn.center))
-    
+
     return exit_btn
 
 
 async def perform_handshake(command, payload=None):
     global game_id, my_player, game_status, error, client_reader, client_writer, board, to_move
-    
+
     try:
         client_reader, client_writer = await asyncio.open_connection(HOST, PORT)
     except Exception as e:
@@ -421,7 +415,7 @@ async def perform_handshake(command, payload=None):
     if command == "CREATE":
         client_writer.write(pickle.dumps(("CREATE",)))
         await client_writer.drain()
-        
+
         data = await client_reader.read(4096)
         resp = pickle.loads(data)
         # ("CREATED", game_id, role)
@@ -433,7 +427,7 @@ async def perform_handshake(command, payload=None):
     elif command == "JOIN":
         client_writer.write(pickle.dumps(("JOIN", payload)))
         await client_writer.drain()
-        
+
         data = await client_reader.read(4096)
         resp = pickle.loads(data)
 
@@ -451,7 +445,7 @@ async def perform_handshake(command, payload=None):
 
 def reset_game():
     global board, graphical_board, to_move, my_player, game_finished, game_status, winner, game_id, input_text, error, client_writer
-    
+
     board = game.generate_board()
     graphical_board = [
         [[[[None, None] for _ in range(3)]
@@ -466,7 +460,7 @@ def reset_game():
     game_id = ""
     error = ""
     input_text = ""
-    
+
     if client_writer:
         try:
             client_writer.close()
@@ -485,7 +479,7 @@ async def main():
         for event in events:
             if event.type == pygame.QUIT:
                 running = False
-        
+
         if game_status == "MENU":
             create_btn, input_box, join_btn, quit_btn = draw_menu()
 
@@ -517,10 +511,10 @@ async def main():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if cancel_btn.collidepoint(event.pos):
                         reset_game()
-                        
+
         else:  # GAME or FINISHED
             exit_btn = draw_game_window()
-            
+
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if exit_btn.collidepoint(event.pos):
