@@ -23,4 +23,5 @@ primary_region = 'gru'
   internal_port = 5555
   protocol = "tcp"
   [[services.ports]]
+    handlers = ["tls", "http"]
     port = 5555

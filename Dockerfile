@@ -9,14 +9,15 @@ RUN apt-get update && apt-get install -y \
 
 # Install python dependencies
 COPY pyproject.toml .
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir uv
+RUN uv sync
 
 # Copy the project files
 COPY . .
 
 # Build the client for web using pygbag
 # Note: This creates the client/build/web directory
-RUN pygbag --build client/
+RUN uv run pygbag --build client/
 
 # Expose the web server port and the game server port
 EXPOSE 8080
