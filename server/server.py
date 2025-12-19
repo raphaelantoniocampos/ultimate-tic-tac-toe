@@ -1,9 +1,14 @@
 import pickle
 import socket
+import sys
 import threading
 import uuid
+from pathlib import Path
 
-import game
+# Add the parent directory to sys.path to allow importing from 'client'
+sys.path.append(str(Path(__file__).parent.parent))
+
+from client import game
 
 HOST = "0.0.0.0"
 PORT = 5555

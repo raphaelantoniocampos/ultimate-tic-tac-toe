@@ -1,6 +1,6 @@
+import asyncio
 import pickle
 import socket
-import sys
 import threading
 
 import pygame
@@ -29,6 +29,7 @@ PORT = 5555
 pygame.init()
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Ultimate Tic Tac Toe")
+clock = pygame.time.Clock()
 
 # Load Assets
 BOARD_IMG = pygame.image.load("assets/board.png")
@@ -451,7 +452,7 @@ def reset_game():
             pass
 
 
-def main():
+async def main():
     global game_status, input_text, client_socket, my_player, game_id, board, to_move
 
     clock = pygame.time.Clock()
@@ -534,14 +535,16 @@ def main():
                                     pass
 
         pygame.display.update()
+        await asyncio.sleep(0)
         clock.tick(30)
     try:
-        client_socket.close()
+        if client_socket:
+            client_socket.close()
     except Exception as e:
         print(f"Error closing socket: {e}")
         pass
-    sys.exit()
+    pygame.quit()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
