@@ -183,7 +183,8 @@ HIGHLIGHT_PADDING = 35
 BG_COLOR = (238, 238, 238)
 TEXT_COLOR = (20, 20, 20)
 FILL_COLOR = (50, 50, 50)
-HIGHLIGHT_COLOR = (215, 205, 100)
+HIGHLIGHT_X_COLOR = (121, 121, 247)
+HIGHLIGHT_O_COLOR = (247, 121, 121)
 
 # Network
 HOST = "127.0.0.1"
@@ -203,7 +204,7 @@ if platform.system() == "Emscripten":
 # Initialize Pygame
 pygame.init()
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Ultimate Tic Tac Toe v5")
+pygame.display.set_caption("Ultimate Tic Tac Toe")
 clock = pygame.time.Clock()
 
 # Load Assets
@@ -254,7 +255,6 @@ graphical_board = [
 ]
 to_move = ["X", None]
 my_player = None
-game_finished = False
 game_status = "MENU"
 winner = None
 game_id = ""
@@ -263,7 +263,7 @@ ws_client = None
 error = ""
 
 
-def get_player_image(player):
+def get_player_img(player):
     if player == "X":
         return X_IMG
     if player == "O":
@@ -273,7 +273,7 @@ def get_player_image(player):
     return None
 
 
-def get_winner_image(winner_player):
+def get_winner_img(winner_player):
     if winner_player == "X":
         return WINNING_X_IMG
     if winner_player == "O":
@@ -325,7 +325,7 @@ def render_board_state():
                         isinstance(mark, str)
                         and graphical_board[i][j][mi][mj][0] is None
                     ):
-                        img = get_player_image(mark)
+                        img = get_player_img(mark)
                         px = center_x + (mj - 1) * mini_spacing
                         py = center_y + (mi - 1) * mini_spacing
                         graphical_board[i][j][mi][mj] = [
@@ -334,7 +334,7 @@ def render_board_state():
                         ]
             if len(board[i][j]) > 3:
                 winning_player = board[i][j][3]
-                winning_img = get_winner_image(winning_player)
+                winning_img = get_winner_img(winning_player)
                 if winning_img and len(graphical_board[i][j]) <= 3:
                     winning_rect = winning_img.get_rect(center=(center_x, center_y))
                     graphical_board[i][j] += [(winning_img, winning_rect)]
@@ -343,7 +343,7 @@ def render_board_state():
 def draw_menu():
     global error
     SCREEN.fill(BG_COLOR)
-    title = title_font.render("Ultimate Tic Tac Toe v5", True, TEXT_COLOR)
+    title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
     create_btn = pygame.Rect(0, 0, 200, 50)
     create_btn.center = (WIDTH // 2, HEIGHT_SLICE * 7)
@@ -389,7 +389,7 @@ def draw_menu():
 
 def draw_waiting():
     SCREEN.fill(BG_COLOR)
-    title = title_font.render("Ultimate Tic Tac Toe v5", True, TEXT_COLOR)
+    title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
     screen_title = title_font.render("Waiting for Opponent...", True, TEXT_COLOR)
     SCREEN.blit(
@@ -417,9 +417,10 @@ def draw_game_window():
         offset = 220
         center_x, center_y = col * CELL_SIZE + offset, row * CELL_SIZE + offset
         highlight_size = CELL_SIZE - (HIGHLIGHT_PADDING * 2)
+        highlight_color = HIGHLIGHT_X_COLOR if to_move[0] == "X" else HIGHLIGHT_O_COLOR
         pygame.draw.rect(
             SCREEN,
-            HIGHLIGHT_COLOR,
+            highlight_color,
             (
                 int(center_x - highlight_size / 2),
                 int(center_y - highlight_size / 2),
@@ -438,7 +439,7 @@ def draw_game_window():
             if len(graphical_board[i][j]) > 3:
                 item = graphical_board[i][j][3]
                 SCREEN.blit(item[0], item[1])
-    title = title_font.render("Ultimate Tic Tac Toe v5", True, TEXT_COLOR)
+    title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 1)))
     id_text = game_state_font.render(f"ID: {game_id}", True, TEXT_COLOR)
     id_rect = id_text.get_rect(topleft=(20, HEIGHT_SLICE * 1))
@@ -463,10 +464,9 @@ def draw_game_window():
             spec_text, spec_text.get_rect(midright=(WIDTH - 20, HEIGHT_SLICE * 1))
         )
     status_text_str, status_img = "", None
-    if game_finished:
+    if game_status == "FINISHED":
         status_text_str = "Winner: " if winner != "D" else "Game Over: DRAW"
-        if winner != "D":
-            status_img = X_IMG if winner == "X" else O_IMG
+        status_img = get_player_img(winner)
     elif game_status == "GAME":
         status_text_str = (
             ("Your Turn: " if to_move[0] == my_player else "Opponent Turn: ")
@@ -542,7 +542,6 @@ def reset_game():
         graphical_board, \
         to_move, \
         my_player, \
-        game_finished, \
         game_status, \
         winner, \
         game_id, \
@@ -557,7 +556,6 @@ def reset_game():
     (
         to_move,
         my_player,
-        game_finished,
         game_status,
         winner,
         game_id,
