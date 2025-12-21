@@ -1,7 +1,7 @@
 import asyncio
+import os
 import pickle
 import sys
-import os
 
 # Fix for WASM/Pygbag import issues
 # If running in Emscripten, ensure we can import local modules
@@ -17,8 +17,9 @@ if sys.platform == "emscripten":
     except Exception as e:
         print(f"DEBUG: Error updating sys.path: {e}")
 
-import pygame
 import platform
+
+import pygame
 
 # Robust import for the logic module
 try:
@@ -355,17 +356,8 @@ def draw_menu():
     SCREEN.fill(BG_COLOR)
     title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
-    create_btn = pygame.Rect(0, 0, 200, 50)
-    create_btn.center = (WIDTH // 2, HEIGHT_SLICE * 7)
-    pygame.draw.rect(SCREEN, FILL_COLOR, create_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Create Game", True, BG_COLOR),
-        game_state_font.render("Create Game", True, BG_COLOR).get_rect(
-            center=create_btn.center
-        ),
-    )
     input_box = pygame.Rect(0, 0, 300, 50)
-    input_box.center = (WIDTH // 2, HEIGHT_SLICE * 9)
+    input_box.center = (WIDTH // 2, HEIGHT_SLICE * 7)
     pygame.draw.rect(SCREEN, BG_COLOR, input_box, border_radius=5)
     pygame.draw.rect(SCREEN, TEXT_COLOR, input_box, 2, border_radius=5)
     txt_surface = input_font.render(input_text, True, TEXT_COLOR)
@@ -374,7 +366,7 @@ def draw_menu():
         placeholder = input_font.render("Enter Game ID", True, (150, 150, 150))
         SCREEN.blit(placeholder, placeholder.get_rect(center=input_box.center))
     join_btn = pygame.Rect(0, 0, 200, 50)
-    join_btn.center = (WIDTH // 2, HEIGHT_SLICE * 11)
+    join_btn.center = (WIDTH // 2, HEIGHT_SLICE * 9)
     pygame.draw.rect(SCREEN, FILL_COLOR, join_btn, border_radius=5)
     SCREEN.blit(
         game_state_font.render("Join Game", True, BG_COLOR),
@@ -382,10 +374,28 @@ def draw_menu():
             center=join_btn.center
         ),
     )
+    create_btn = pygame.Rect(0, 0, 200, 50)
+    create_btn.center = ((WIDTH // 18) * 6, HEIGHT_SLICE * 11)
+    pygame.draw.rect(SCREEN, FILL_COLOR, create_btn, border_radius=5)
+    SCREEN.blit(
+        game_state_font.render("Create Game", True, BG_COLOR),
+        game_state_font.render("Create Game", True, BG_COLOR).get_rect(
+            center=create_btn.center
+        ),
+    )
+    search_btn = pygame.Rect(0, 0, 200, 50)
+    search_btn.center = ((WIDTH // 18) * 12, HEIGHT_SLICE * 11)
+    pygame.draw.rect(SCREEN, FILL_COLOR, search_btn, border_radius=5)
+    SCREEN.blit(
+        game_state_font.render("Search Games", True, BG_COLOR),
+        game_state_font.render("Search Games", True, BG_COLOR).get_rect(
+            center=search_btn.center
+        ),
+    )
     if error:
         error_text = game_state_font.render(error, True, (200, 0, 0))
         SCREEN.blit(
-            error_text, error_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 13))
+            error_text, error_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 15))
         )
     quit_btn = pygame.Rect(0, 0, 200, 50)
     quit_btn.center = (WIDTH // 2, HEIGHT_SLICE * 15)
@@ -394,7 +404,7 @@ def draw_menu():
         game_state_font.render("Quit", True, BG_COLOR),
         game_state_font.render("Quit", True, BG_COLOR).get_rect(center=quit_btn.center),
     )
-    return create_btn, input_box, join_btn, quit_btn
+    return create_btn, search_btn, input_box, join_btn, quit_btn
 
 
 def draw_waiting():
@@ -597,12 +607,15 @@ async def main():
             if event.type == pygame.QUIT:
                 running = False
         if game_status == "MENU":
-            create_btn, input_box, join_btn, quit_btn = draw_menu()
+            create_btn, search_btn, input_box, join_btn, quit_btn = draw_menu()
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if create_btn.collidepoint(event.pos):
                         if await perform_handshake("CREATE"):
                             asyncio.create_task(connect_and_listen())
+                    if search_btn.collidepoint(event.pos):
+                        print("search")
+                        # asyncio.create_task(connect_and_listen())
                     elif join_btn.collidepoint(event.pos):
                         if input_text:
                             if await perform_handshake("JOIN", input_text):
