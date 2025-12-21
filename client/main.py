@@ -253,7 +253,8 @@ graphical_board = [
     [[[[None, None] for _ in range(3)] for _ in range(3)] for _ in range(3)]
     for _ in range(3)
 ]
-to_move = ["X", None]
+current_player = "X"
+current_restriction = None
 my_player = None
 game_status = "MENU"
 winner = None
@@ -284,7 +285,15 @@ def get_winner_img(winner_player):
 
 
 async def connect_and_listen():
-    global game_status, my_player, board, to_move, winner, error, ws_client
+    global \
+        game_status, \
+        my_player, \
+        board, \
+        current_player, \
+        current_restriction, \
+        winner, \
+        error, \
+        ws_client
     if not ws_client:
         return
     try:
@@ -296,7 +305,8 @@ async def connect_and_listen():
                 game_status = "GAME"
             elif command == "UPDATE":
                 board = msg[1]
-                to_move = msg[2]
+                current_player = msg[2]
+                current_restriction = msg[3]
                 render_board_state()
             elif command == "GAME_OVER":
                 winner = msg[1]
@@ -412,12 +422,18 @@ def draw_waiting():
 def draw_game_window():
     SCREEN.fill(BG_COLOR)
     SCREEN.blit(BOARD_IMG, (64, 64))
-    if to_move[1] is not None and game_status == "GAME" and my_player != "SPECTATOR":
-        row, col = to_move[1]
+    if (
+        current_restriction is not None
+        and game_status == "GAME"
+        and my_player != "SPECTATOR"
+    ):
+        row, col = current_restriction
         offset = 220
         center_x, center_y = col * CELL_SIZE + offset, row * CELL_SIZE + offset
         highlight_size = CELL_SIZE - (HIGHLIGHT_PADDING * 2)
-        highlight_color = HIGHLIGHT_X_COLOR if to_move[0] == "X" else HIGHLIGHT_O_COLOR
+        highlight_color = (
+            HIGHLIGHT_X_COLOR if current_player == "X" else HIGHLIGHT_O_COLOR
+        )
         pygame.draw.rect(
             SCREEN,
             highlight_color,
@@ -463,18 +479,21 @@ def draw_game_window():
         SCREEN.blit(
             spec_text, spec_text.get_rect(midright=(WIDTH - 20, HEIGHT_SLICE * 1))
         )
+
     status_text_str, status_img = "", None
     if game_status == "FINISHED":
         status_text_str = "Winner: " if winner != "D" else "Game Over: DRAW"
         status_img = get_player_img(winner)
     elif game_status == "GAME":
         status_text_str = (
-            ("Your Turn: " if to_move[0] == my_player else "Opponent Turn: ")
+            ("Your Turn: " if current_player == my_player else "Opponent Turn: ")
             if my_player != "SPECTATOR"
             else "Turn: "
         )
-        status_img = X_IMG if to_move[0] == "X" else O_IMG
+        status_img = X_IMG if current_player == "X" else O_IMG
     bottom_center = (WIDTH // 2, HEIGHT_SLICE * 17)
+    if error:
+        status_text_str = error
     if status_img:
         txt_surf = game_state_font.render(status_text_str, True, TEXT_COLOR)
         txt_rect = txt_surf.get_rect()
@@ -540,7 +559,8 @@ def reset_game():
     global \
         board, \
         graphical_board, \
-        to_move, \
+        current_player, \
+        current_restriction, \
         my_player, \
         game_status, \
         winner, \
@@ -554,14 +574,15 @@ def reset_game():
         for _ in range(3)
     ]
     (
-        to_move,
+        current_player,
+        current_restriction,
         my_player,
         game_status,
         winner,
         game_id,
         error,
         input_text,
-    ) = ["X", None], None, False, "MENU", None, "", "", ""
+    ) = "X", None, None, "MENU", None, "", "", ""
     if ws_client:
         asyncio.create_task(ws_client.close())
         ws_client = None
@@ -588,11 +609,12 @@ async def main():
                                 asyncio.create_task(connect_and_listen())
                     elif quit_btn.collidepoint(event.pos):
                         running = False
+                        return
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
                         input_text = input_text[:-1]
                     elif len(input_text) < 10:
-                        input_text += event.unicode
+                        input_text += event.unicode.upper()
         elif game_status == "WAITING":
             cancel_btn = draw_waiting()
             for event in events:
@@ -600,7 +622,7 @@ async def main():
                     event.pos
                 ):
                     reset_game()
-        else:
+        else:  # GAME or FINISHED
             exit_btn = draw_game_window()
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -609,7 +631,7 @@ async def main():
                         continue
                     if (
                         game_status == "GAME"
-                        and my_player == to_move[0]
+                        and my_player == current_player
                         and my_player != "SPECTATOR"
                     ):
                         x, y = pygame.mouse.get_pos()

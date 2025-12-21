@@ -86,29 +86,27 @@ def get_board_state(board):
     return board_state
 
 
-def apply_move(board, to_move, move_indices):
+def apply_move(board, current_player, current_restriction, move_indices):
     large_row, large_col, mini_row, mini_col = move_indices
-    player = to_move[0]
-    required_next_move = to_move[1]
 
     # Determine valid move
-    if required_next_move:
-        if required_next_move != (large_row, large_col):
+    if current_restriction:
+        if current_restriction != (large_row, large_col):
             # Invalid move: Wrong large cell
-            return board, [player, required_next_move], False
+            return board, current_player, current_restriction, False
 
     mini_board = board[large_row][large_col]
 
     # Check for mini board winner
     if len(mini_board) > 3:
-        required_next_move = None
-        return board, [player, required_next_move], False
+        current_restriction = None
+        return board, current_player, current_restriction, False
 
     if not isinstance(mini_board[mini_row][mini_col], int):
-        return board, to_move, False
+        return board, current_player, current_restriction, False
 
     # Apply move
-    mini_board[mini_row][mini_col] = player
+    mini_board[mini_row][mini_col] = current_player
 
     # Check for mini board winner
     winner = check_board_winner(mini_board)
@@ -116,7 +114,7 @@ def apply_move(board, to_move, move_indices):
         mini_board += [winner]
 
     # Switch player
-    next_player = "O" if player == "X" else "X"
+    next_player = "O" if current_player == "X" else "X"
     next_restriction = (mini_row, mini_col)
 
     # Check if the target large cell is already won
@@ -124,4 +122,4 @@ def apply_move(board, to_move, move_indices):
     if len(target_mini_board) > 3:
         next_restriction = None
 
-    return board, [next_player, next_restriction], True
+    return board, next_player, next_restriction, True

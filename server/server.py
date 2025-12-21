@@ -1,9 +1,11 @@
 import asyncio
 import pickle
-import uuid
 import sys
 from pathlib import Path
 import websockets
+import random
+import string
+
 
 # Add the parent directory to sys.path to allow importing from 'client'
 sys.path.append(str(Path(__file__).parent.parent))
@@ -20,7 +22,8 @@ class GameSession:
     def __init__(self, game_id):
         self.game_id = game_id
         self.board = game.generate_board()
-        self.to_move = ["X", None]
+        self.current_player = "X"
+        self.current_restriction = None
         self.players = {}  # "X": ws, "O": ws
         self.spectators = set()
         self.winner = None
@@ -82,7 +85,7 @@ async def handle_client(websocket):
         command = request[0]
 
         if command == "CREATE":
-            game_id = str(uuid.uuid4())[:5]
+            game_id = generate_id(5)
             current_game = GameSession(game_id)
             games[game_id] = current_game
 
@@ -112,7 +115,14 @@ async def handle_client(websocket):
                 role = "SPECTATOR"
                 await websocket.send(pickle.dumps(("JOINED", "SPECTATOR")))
                 await websocket.send(
-                    pickle.dumps(("UPDATE", current_game.board, current_game.to_move))
+                    pickle.dumps(
+                        (
+                            "UPDATE",
+                            current_game.board,
+                            current_game.current_player,
+                            current_game.current_restriction,
+                        )
+                    )
                 )
                 print(f"Spectator joined game {game_id}")
         else:
@@ -126,20 +136,29 @@ async def handle_client(websocket):
             try:
                 move = pickle.loads(message)
                 # Apply move checking
-                if current_game.to_move[0] == role:
-                    new_board, new_to_move, valid = game.apply_move(
-                        current_game.board, current_game.to_move, move
+                if current_game.current_player == role:
+                    new_board, next_player, next_restriction, valid = game.apply_move(
+                        current_game.board,
+                        current_game.current_player,
+                        current_game.current_restriction,
+                        move,
                     )
 
                     if valid:
                         current_game.board = new_board
-                        current_game.to_move = new_to_move
+                        current_game.current_player = next_player
+                        current_game.current_restriction = next_restriction
 
                         board_state = game.get_board_state(current_game.board)
                         winner = game.check_board_winner(board_state)
 
                         await current_game.broadcast(
-                            ("UPDATE", current_game.board, current_game.to_move)
+                            (
+                                "UPDATE",
+                                current_game.board,
+                                current_game.current_player,
+                                current_game.current_restriction,
+                            )
                         )
 
                         if winner:
@@ -166,6 +185,10 @@ async def handle_client(websocket):
             if not current_game.players and not current_game.spectators:
                 if current_game.game_id in games:
                     del games[current_game.game_id]
+
+def generate_id(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length)).upper()
 
 
 async def main():
