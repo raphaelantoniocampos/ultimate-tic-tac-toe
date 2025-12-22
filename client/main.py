@@ -170,7 +170,7 @@ class WSClient:
     async def __anext__(self):
         try:
             return await self.receive()
-        except:
+        except Exception:
             raise StopAsyncIteration
 
 
@@ -211,7 +211,7 @@ they can play anywhere on the board.
 """
 
 # AI Citation:
-# Ensures the WebSocket protocol automatically switches to 'wss' when deployed to an HTTPS environment to prevent browser security blocks. 
+# Ensures the WebSocket protocol automatically switches to 'wss' when deployed to an HTTPS environment to prevent browser security blocks.
 if platform.system() == "Emscripten":
     import js
 
