@@ -11,8 +11,8 @@ Ultimate Tic-Tac-Toe is a strategy board game composed of nine Tic-Tac-Toe board
 1.  **Objective**: Win three mini-boards in a row (horizontally, vertically, or diagonally) to win the large board and the game.
 2.  **Move Restriction**: Your move determines which mini-board your opponent must play in.
     - If you play in the top-right cell of a mini-board, your opponent **must** play in the top-right mini-board of the large grid.
-3.  **Open Moves**: If a player is sent to a mini-board that has already been won drawn, they can play **anywhere** on the board.
-4.  **Strategy**: You often have to sacrifice a mini-board to avoid giving your opponent a winning move on the large board!
+3.  **Open Moves**: If a player is sent to a mini-board that has already been won or drawn, they can play **anywhere** on the board.
+4.  **Have fun**.
 
 ## ✨ Features
 

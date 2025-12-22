@@ -4,7 +4,6 @@ import pickle
 import sys
 
 # Fix for WASM/Pygbag import issues
-# If running in Emscripten, ensure we can import local modules
 if sys.platform == "emscripten":
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +20,6 @@ import platform
 
 import pygame
 
-# Robust import for the logic module
 try:
     import logic as game
 except ImportError:
@@ -35,10 +33,6 @@ except ImportError:
                 return []
 
         game = DummyLogic()
-
-# --- WebSocket Client Wrapper (v5: Hex String Bridge) ---
-# Previous versions failed because Pygbag's interop struggled with bytes and lists.
-# Hex strings are foolproof: they are plain strings and don't require complex conversion.
 
 
 class WSClient:
@@ -106,8 +100,7 @@ class WSClient:
             max_retries = 100
             while not js.window.ws_helper.sockets[self.ws_id].opened:
                 if js.window.ws_helper.sockets[self.ws_id].error:
-                    raise Exception(
-                        "JS WebSocket reported an error during connection.")
+                    raise Exception("JS WebSocket reported an error during connection.")
                 max_retries -= 1
                 if max_retries <= 0:
                     raise Exception("JS WebSocket connection timeout.")
@@ -194,6 +187,20 @@ HOST = "127.0.0.1"
 PORT = 5555
 PROTOCOL = "ws"
 
+# Tutorial
+TUTORIAL = """
+1.  Objective: 
+Win three mini-boards in a row to win the large board and the game.
+2.  Move Restriction:
+Your move determines which mini-board your opponent must play in.
+If you play in the top-right cell of a mini-board,
+your opponent must play in the top-right mini-board of the large grid.
+3.  Open Moves:
+If a player is sent to a mini-board that has already been won or drawn,
+they can play anywhere on the board.
+4. Have fun.
+"""
+
 if platform.system() == "Emscripten":
     import js
 
@@ -225,13 +232,11 @@ try:
     WINNING_O_IMG = pygame.image.load("assets/light_o.png")
     DRAW_IMG = pygame.image.load("assets/draw.png")
     MINI_DRAW_IMG = pygame.transform.scale(
-        DRAW_IMG, ((DRAW_IMG.get_width() * 0.245),
-                   (DRAW_IMG.get_height() * 0.245))
+        DRAW_IMG, ((DRAW_IMG.get_width() * 0.245), (DRAW_IMG.get_height() * 0.245))
     )
 
     title_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 32)
-    game_state_font = pygame.font.Font(
-        "assets/0xProtoNerdFont-Regular.ttf", 24)
+    game_state_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 24)
     games_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 14)
     input_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 28)
 except Exception as e:
@@ -406,8 +411,7 @@ def render_board_state():
                 winning_player = board[i][j][3]
                 winning_img = get_winner_img(winning_player)
                 if winning_img and len(graphical_board[i][j]) <= 3:
-                    winning_rect = winning_img.get_rect(
-                        center=(center_x, center_y))
+                    winning_rect = winning_img.get_rect(center=(center_x, center_y))
                     graphical_board[i][j] += [(winning_img, winning_rect)]
 
 
@@ -426,32 +430,35 @@ def draw_menu():
         placeholder = input_font.render("Enter Game ID", True, (150, 150, 150))
         SCREEN.blit(placeholder, placeholder.get_rect(center=input_box.center))
     join_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 9), text="Join Game")
-    create_btn = draw_button(pos=((WIDTH // 18) * 6, HEIGHT_SLICE * 11), text="Create Game")
-    search_btn = draw_button(pos=((WIDTH // 18) * 12, HEIGHT_SLICE * 11), text="Search Games")
+    create_btn = draw_button(
+        pos=((WIDTH // 18) * 6, HEIGHT_SLICE * 11), text="Create Game"
+    )
+    search_btn = draw_button(
+        pos=((WIDTH // 18) * 12, HEIGHT_SLICE * 11), text="Search Games"
+    )
     if error:
         error_text = game_state_font.render(error, True, (200, 0, 0))
         SCREEN.blit(
-            error_text, error_text.get_rect(
-                center=(WIDTH // 2, HEIGHT_SLICE * 15))
+            error_text, error_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 15))
         )
-    quit_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 15), text="Quit", width=140)
-    return create_btn, search_btn, input_box, join_btn, quit_btn
+    tutorial_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 13), text="How to Play")
+    quit_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 17), text="Quit")
+    return create_btn, search_btn, input_box, join_btn, tutorial_btn, quit_btn
 
 
 def draw_waiting():
     SCREEN.fill(BG_COLOR)
     title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
-    screen_title = title_font.render(
-        "Waiting for Opponent...", True, TEXT_COLOR)
+    screen_title = title_font.render("Waiting for Opponent...", True, TEXT_COLOR)
     SCREEN.blit(
-        screen_title, screen_title.get_rect(
-            center=(WIDTH // 2, HEIGHT_SLICE * 6))
+        screen_title, screen_title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 6))
     )
     id_text = title_font.render(f"Game ID: {game_id}", True, TEXT_COLOR)
-    SCREEN.blit(id_text, id_text.get_rect(
-        center=(WIDTH // 2, HEIGHT_SLICE * 9)))
-    cancel_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 11), text="Cancel", width=140)
+    SCREEN.blit(id_text, id_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 9)))
+    cancel_btn = draw_button(
+        pos=(WIDTH // 2, HEIGHT_SLICE * 11), text="Cancel", width=140
+    )
     return cancel_btn
 
 
@@ -467,7 +474,7 @@ def draw_searching():
             continue
         full_games.append(game)
 
-    full_games.sort(key=lambda k:k['spectators'], reverse=True)
+    full_games.sort(key=lambda k: k["spectators"], reverse=True)
     waiting_title = game_state_font.render(
         f"Waiting for player: {len(waiting_player_games)}", True, TEXT_COLOR
     )
@@ -481,17 +488,18 @@ def draw_searching():
     )
     SCREEN.blit(
         full_games_title,
-        full_games_title.get_rect(
-            left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 2)),
+        full_games_title.get_rect(left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 2)),
     )
 
     search_mode_text = game_state_font.render("Search for: ", True, TEXT_COLOR)
     SCREEN.blit(
         search_mode_text,
-        search_mode_text.get_rect(
-            left=(WIDTH_SLICE * 13), top=(HEIGHT_SLICE * 1)),
+        search_mode_text.get_rect(left=(WIDTH_SLICE * 13), top=(HEIGHT_SLICE * 1)),
     )
-    search_mode_btn = draw_button(pos=(WIDTH_SLICE * 15, HEIGHT_SLICE * 2), text=get_search_mode_text(search_mode_id))
+    search_mode_btn = draw_button(
+        pos=(WIDTH_SLICE * 15, HEIGHT_SLICE * 2),
+        text=get_search_mode_text(search_mode_id),
+    )
     match search_mode_id:
         case 0:
             games_to_show = waiting_player_games
@@ -517,8 +525,7 @@ def draw_searching():
                 text = f"{game['game_id']}"
             case _:
                 text = f"{game['game_id']}: {game['spectators']}"
-        region = (WIDTH_SLICE * y_region,
-                        HEIGHT_SLICE // 2 * ((i % 25) + 7))
+        region = (WIDTH_SLICE * y_region, HEIGHT_SLICE // 2 * ((i % 25) + 7))
         game_text = games_font.render(
             text,
             True,
@@ -526,25 +533,27 @@ def draw_searching():
         )
         SCREEN.blit(
             game_text,
-            game_text.get_rect(
-                center=region
-            ),
+            game_text.get_rect(center=region),
         )
-        game_btn = draw_button(pos=(region[0] + 80,region[1]), text="Join", width=40, height=20, font=games_font)
-        games_btns[game['game_id']] = game_btn
+        game_btn = draw_button(
+            pos=(region[0] + 80, region[1]),
+            text="Join",
+            width=40,
+            height=20,
+            font=games_font,
+        )
+        games_btns[game["game_id"]] = game_btn
 
-    cancel_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 17), text="Cancel", width=140)
+    cancel_btn = draw_button(
+        pos=(WIDTH // 2, HEIGHT_SLICE * 17), text="Cancel", width=140
+    )
     return search_mode_btn, cancel_btn, games_btns
 
 
 def draw_game_window():
     SCREEN.fill(BG_COLOR)
     SCREEN.blit(BOARD_IMG, (64, 64))
-    if (
-        current_restriction is not None
-        and game_status == "GAME"
-        and my_player != "SPECTATOR"
-    ):
+    if current_restriction is not None and game_status == "GAME":
         row, col = current_restriction
         offset = 220
         center_x, center_y = col * CELL_SIZE + offset, row * CELL_SIZE + offset
@@ -595,8 +604,7 @@ def draw_game_window():
     elif my_player == "SPECTATOR":
         spec_text = game_state_font.render("SPECTATING", True, TEXT_COLOR)
         SCREEN.blit(
-            spec_text, spec_text.get_rect(
-                midright=(WIDTH - 20, HEIGHT_SLICE * 1))
+            spec_text, spec_text.get_rect(midright=(WIDTH - 20, HEIGHT_SLICE * 1))
         )
 
     status_text_str, status_img = "", None
@@ -630,14 +638,34 @@ def draw_game_window():
     return exit_btn
 
 
-def draw_button(pos: (int, int), text: str, width: int=200, height: int=40, font: pygame=game_state_font):
+def draw_tutorial():
+    SCREEN.fill(BG_COLOR)
+    title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
+    SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
+    tutorial_list = TUTORIAL.split("\n")
+    for i, phrase in enumerate(tutorial_list):
+        phrase_txt = games_font.render(phrase, True, TEXT_COLOR)
+        SCREEN.blit(
+            phrase_txt, phrase_txt.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * (4 + i)))
+        )
+
+    back_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 17), text="Back", width=140)
+    return back_btn
+
+
+def draw_button(
+    pos: (int, int),
+    text: str,
+    width: int = 200,
+    height: int = 40,
+    font: pygame = game_state_font,
+):
     btn = pygame.Rect(0, 0, width, height)
     btn.center = pos
     pygame.draw.rect(SCREEN, FILL_COLOR, btn, border_radius=5)
     SCREEN.blit(
         font.render(text, True, BG_COLOR),
-        font.render(
-            text, True, BG_COLOR).get_rect(center=btn.center),
+        font.render(text, True, BG_COLOR).get_rect(center=btn.center),
     )
     return btn
 
@@ -659,8 +687,7 @@ def reset_game():
         search_mode_id
     board = game.generate_board()
     graphical_board = [
-        [[[[None, None] for _ in range(3)]
-          for _ in range(3)] for _ in range(3)]
+        [[[[None, None] for _ in range(3)] for _ in range(3)] for _ in range(3)]
         for _ in range(3)
     ]
     (
@@ -694,7 +721,9 @@ async def main():
             if event.type == pygame.QUIT:
                 running = False
         if game_status == "MENU":
-            create_btn, search_btn, input_box, join_btn, quit_btn = draw_menu()
+            create_btn, search_btn, input_box, join_btn, tutorial_btn, quit_btn = (
+                draw_menu()
+            )
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if create_btn.collidepoint(event.pos):
@@ -706,14 +735,23 @@ async def main():
                         if input_text:
                             if await perform_handshake("JOIN", input_text):
                                 asyncio.create_task(connect_and_listen())
+                    elif tutorial_btn.collidepoint(event.pos):
+                        game_status = "TUTORIAL"
                     elif quit_btn.collidepoint(event.pos):
                         running = False
-                        return
+                        break
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_BACKSPACE:
                         input_text = input_text[:-1]
                     elif len(input_text) < 10:
                         input_text += event.unicode.upper()
+
+        elif game_status == "TUTORIAL":
+            back_btn = draw_tutorial()
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if back_btn.collidepoint(event.pos):
+                        game_status = "MENU"
         elif game_status == "WAITING":
             cancel_btn = draw_waiting()
             for event in events:
@@ -721,7 +759,6 @@ async def main():
                     event.pos
                 ):
                     reset_game()
-
         elif game_status == "SEARCHING":
             search_mode_btn, cancel_btn, games_btns = draw_searching()
             for event in events:
@@ -753,8 +790,7 @@ async def main():
                             (y - BOARD_OFFSET) // CELL_SIZE,
                         )
                         if 0 <= col <= 2 and 0 <= row <= 2:
-                            rx, ry = (x - BOARD_OFFSET) % 230, (y -
-                                                                BOARD_OFFSET) % 230
+                            rx, ry = (x - BOARD_OFFSET) % 230, (y - BOARD_OFFSET) % 230
                             mc, mr = rx // MINI_CELL_SIZE, ry // MINI_CELL_SIZE
                             if mc <= 2 and mr <= 2:
                                 try:

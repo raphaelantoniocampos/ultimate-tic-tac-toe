@@ -100,7 +100,6 @@ async def handle_client(websocket):
             current_game = GameSession(game_id)
             games[game_id] = current_game
 
-            # No lock needed for simple dict operations in asyncio single-thread loop
             current_game.players["X"] = websocket
             role = "X"
 
@@ -198,7 +197,7 @@ async def handle_client(websocket):
             elif role == "SPECTATOR":
                 current_game.spectators.discard(websocket)
 
-            # Clean up empty games (optional but good for long running)
+            # Clean up empty games
             if not current_game.players and not current_game.spectators:
                 if current_game.game_id in games:
                     del games[current_game.game_id]
