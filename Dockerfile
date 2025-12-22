@@ -17,7 +17,7 @@ COPY . .
 
 # Build the client for web using pygbag
 # Note: This creates the client/build/web directory
-RUN uv run pygbag --title UTTT --icon client/assets/uttt.ico --build client/
+RUN uv run pygbag --title 'Ultimate Tic Tac Toe' --icon client/assets/uttt.ico --build client/
 
 # Expose the web server port and the game server port
 EXPOSE 8080

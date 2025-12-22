@@ -3,7 +3,10 @@ import os
 import pickle
 import sys
 
+# AI Citation:
+# I used AI to help transition networking from standard TCP sockets to WebSockets to support browser compatibility via Pygbag/Emscripten
 # Fix for WASM/Pygbag import issues
+# If running in Emscripten, ensure import local modules
 if sys.platform == "emscripten":
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,6 +23,8 @@ import platform
 
 import pygame
 
+# AI Citation:
+# Robust import for the logic module
 try:
     import logic as game
 except ImportError:
@@ -35,6 +40,10 @@ except ImportError:
         game = DummyLogic()
 
 
+# AI Citation:
+# WebSocket Client Wrapper (Hex String Bridge)
+# Previous versions failed because Pygbag's interop struggled with bytes and lits.
+# Hex strings are foolproof: they are plain strings and don't require complex conversion.
 class WSClient:
     def __init__(self):
         self.is_wasm = platform.system() == "Emscripten"
@@ -201,6 +210,8 @@ they can play anywhere on the board.
 4. Have fun.
 """
 
+# AI Citation:
+# Ensures the WebSocket protocol automatically switches to 'wss' when deployed to an HTTPS environment to prevent browser security blocks. 
 if platform.system() == "Emscripten":
     import js
 

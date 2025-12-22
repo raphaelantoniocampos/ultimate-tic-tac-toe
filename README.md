@@ -4,6 +4,8 @@ A multiplayer implementation of **Ultimate Tic-Tac-Toe** built with Python and P
 
 ![Ultimate Tic-Tac-Toe Gameplay](client/assets/game.png)
 
+![🎥 Video Demo](https://www.youtube.com/watch?v=pbTO0w-fWKE)
+
 ## 🎮 What is Ultimate Tic-Tac-Toe?
 
 Ultimate Tic-Tac-Toe is a strategy board game composed of nine Tic-Tac-Toe boards arranged in a 3x3 grid. It adds a "recursive" twist to the classic game:
@@ -17,18 +19,17 @@ Ultimate Tic-Tac-Toe is a strategy board game composed of nine Tic-Tac-Toe board
 ## ✨ Features
 
 -   **Multiplayer**: Play against friends online via WebSockets.
--   **Offline Mode**: Play locally on the same machine.
 -   **Spectator Mode**: Watch games in progress.
 -   **Cross-Platform**: Runs in the browser (via WASM) or as a native Python application.
--   **Responsive UI**: Clean graphics and intuitive highlight system for valid moves.
+-   **Clean UI**: Simple graphics and intuitive highlight system for valid moves.
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: [Pygame](https://www.pygame.org/) (Graphics & Input)
--   **Web Port**: [Pygbag](https://pygbag.github.io/) (WASM Support)
--   **Backend**: [websockets](https://websockets.readthedocs.io/) (Asynchronous Socket Server)
--   **Environment**: [uv](https://github.com/astral-sh/uv) (Fast Python Package Manager)
--   **Deployment**: [Fly.io](https://fly.io/) (Dockerized Hosting)
+-   **Frontend**: [Pygame](https://www.pygame.org/)
+-   **Web Port**: [Pygbag](https://pygbag.github.io/)
+-   **Backend**: [websockets](https://websockets.readthedocs.io/)
+-   **Environment**: [uv](https://github.com/astral-sh/uv)
+-   **Deployment**: [Fly.io](https://fly.io/)
 
 ## 🚀 Getting Started
 
@@ -52,28 +53,16 @@ Ultimate Tic-Tac-Toe is a strategy board game composed of nine Tic-Tac-Toe board
 
 ### Running Locally
 
--   **Offline Mode (Local Play)**:
-    ```bash
-    uv run offline.py
-    ```
-
--   **Online Mode (Development)**:
+-   **Local Mode (Development)**:
     1.  Start the server:
         ```bash
         uv run server/server.py
         ```
     2.  Start the client:
         ```bash
-        uv run client/main.py
+        cd client/
+        uv run main.py
         ```
-
-### Web Development (Pygbag)
-
-To test the WASM build locally:
-```bash
-uv run pygbag client/
-```
-Then visit `http://localhost:8000` in your browser.
 
 ## 🚢 Deployment
 
@@ -92,13 +81,20 @@ The project is configured for deployment to **Fly.io**.
 ├── client/             # Pygame client source code
 │   ├── assets/         # Game images and fonts
 │   ├── logic.py        # Shared game rules logic
-│   └── main.py         # Client entry point (Multiplayer)
+│   └── main.py         # Client entry point
 ├── server/             # WebSocket server source code
 │   └── server.py       # Handles game sessions and routing
-├── offline.py          # Standalone local-only version
 ├── Dockerfile          # Container configuration
 └── fly.toml            # Fly.io deployment config
 ```
+
+## ⭐ AI Usage
+
+Artificial Intelligence Tools: Gemini 3.0 Pro and Flash in planning mode; 
+Architectural Transition: AI was used to consult on the transition from standard TCP sockets to WebSockets to ensure browser compatibility via the Emscripten toolchain;
+Environment Configuration: AI was used to resolve platform-specific import issues for WASM/Pygbag (Emscripten), specifically regarding the adjustment of sys.path and the js module bridge;
+Networking Logic: AI suggested the logic for protocol switching (switching from ws to wss) by accessing the browser's window.location parameters to prevent security blocks in HTTPS environments;
+Writing—Review & Editing: AI was used to refine the documentation and ensure the technical explanations of the network bridge were clear and concise;
 
 ## 📜 License
 
