@@ -2,7 +2,7 @@
 
 A multiplayer implementation of **Ultimate Tic-Tac-Toe** built with Python and Pygame, compiled for the web using Pygbag, and hosted on Fly.io.
 
-![Ultimate Tic-Tac-Toe Gameplay](assets/board.png)
+![Ultimate Tic-Tac-Toe Gameplay](https://ultimate-tic-tac-toe.fly.dev)
 
 ## 🎮 What is Ultimate Tic-Tac-Toe?
 
@@ -83,7 +83,7 @@ The project is configured for deployment to **Fly.io**.
     ```bash
     fly deploy
     ```
-    This uses the provided `Dockerfile` to build the Pygbag web client and start both the HTTP server (serving the WASM files) and the WebSocket server.
+    This uses the a `Dockerfile` to build the Pygbag web client and start both the HTTP server (serving the WASM files) and the WebSocket server.
 
 ## 📂 Project Structure
 
