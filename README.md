@@ -2,7 +2,7 @@
 
 A multiplayer implementation of **Ultimate Tic-Tac-Toe** built with Python and Pygame, compiled for the web using Pygbag, and hosted on Fly.io.
 
-![Ultimate Tic-Tac-Toe Gameplay](https://ultimate-tic-tac-toe.fly.dev)
+![Ultimate Tic-Tac-Toe Gameplay](clinet/assets/game.png)
 
 ## 🎮 What is Ultimate Tic-Tac-Toe?
 
