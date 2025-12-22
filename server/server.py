@@ -92,7 +92,11 @@ async def handle_client(websocket):
         command = request[0]
 
         if command == "CREATE":
-            game_id = generate_id(5)
+            unique = False
+            while not unique:
+                game_id = generate_id(5)
+                if game_id not in games.keys():
+                    unique = True
             current_game = GameSession(game_id)
             games[game_id] = current_game
 
@@ -106,15 +110,6 @@ async def handle_client(websocket):
         elif command == "FETCH":
             send_games = [game.to_dict() for game in games.values()]
 
-            for i in range(220):
-                send_games.append(
-                    {
-                        "game_id": generate_id(6),
-                        "players": random.randint(1, 2),
-                        "spectators": 0,
-                    }
-                )
-            print(send_games)
             await websocket.send(
                 pickle.dumps(("LISTED", send_games))
             )

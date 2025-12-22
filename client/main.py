@@ -106,7 +106,8 @@ class WSClient:
             max_retries = 100
             while not js.window.ws_helper.sockets[self.ws_id].opened:
                 if js.window.ws_helper.sockets[self.ws_id].error:
-                    raise Exception("JS WebSocket reported an error during connection.")
+                    raise Exception(
+                        "JS WebSocket reported an error during connection.")
                 max_retries -= 1
                 if max_retries <= 0:
                     raise Exception("JS WebSocket connection timeout.")
@@ -224,11 +225,13 @@ try:
     WINNING_O_IMG = pygame.image.load("assets/light_o.png")
     DRAW_IMG = pygame.image.load("assets/draw.png")
     MINI_DRAW_IMG = pygame.transform.scale(
-        DRAW_IMG, ((DRAW_IMG.get_width() * 0.245), (DRAW_IMG.get_height() * 0.245))
+        DRAW_IMG, ((DRAW_IMG.get_width() * 0.245),
+                   (DRAW_IMG.get_height() * 0.245))
     )
 
     title_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 32)
-    game_state_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 24)
+    game_state_font = pygame.font.Font(
+        "assets/0xProtoNerdFont-Regular.ttf", 24)
     games_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 14)
     input_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 28)
 except Exception as e:
@@ -247,6 +250,7 @@ except Exception as e:
     DRAW_IMG = MINI_DRAW_IMG
     title_font = pygame.font.SysFont("Arial", 32)
     game_state_font = pygame.font.SysFont("Arial", 24)
+    games_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 14)
     input_font = pygame.font.SysFont("Arial", 28)
 
 
@@ -402,7 +406,8 @@ def render_board_state():
                 winning_player = board[i][j][3]
                 winning_img = get_winner_img(winning_player)
                 if winning_img and len(graphical_board[i][j]) <= 3:
-                    winning_rect = winning_img.get_rect(center=(center_x, center_y))
+                    winning_rect = winning_img.get_rect(
+                        center=(center_x, center_y))
                     graphical_board[i][j] += [(winning_img, winning_rect)]
 
 
@@ -420,45 +425,16 @@ def draw_menu():
     if not input_text:
         placeholder = input_font.render("Enter Game ID", True, (150, 150, 150))
         SCREEN.blit(placeholder, placeholder.get_rect(center=input_box.center))
-    join_btn = pygame.Rect(0, 0, 200, 50)
-    join_btn.center = (WIDTH // 2, HEIGHT_SLICE * 9)
-    pygame.draw.rect(SCREEN, FILL_COLOR, join_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Join Game", True, BG_COLOR),
-        game_state_font.render("Join Game", True, BG_COLOR).get_rect(
-            center=join_btn.center
-        ),
-    )
-    create_btn = pygame.Rect(0, 0, 200, 50)
-    create_btn.center = ((WIDTH // 18) * 6, HEIGHT_SLICE * 11)
-    pygame.draw.rect(SCREEN, FILL_COLOR, create_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Create Game", True, BG_COLOR),
-        game_state_font.render("Create Game", True, BG_COLOR).get_rect(
-            center=create_btn.center
-        ),
-    )
-    search_btn = pygame.Rect(0, 0, 200, 50)
-    search_btn.center = ((WIDTH // 18) * 12, HEIGHT_SLICE * 11)
-    pygame.draw.rect(SCREEN, FILL_COLOR, search_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Search Games", True, BG_COLOR),
-        game_state_font.render("Search Games", True, BG_COLOR).get_rect(
-            center=search_btn.center
-        ),
-    )
+    join_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 9), text="Join Game")
+    create_btn = draw_button(pos=((WIDTH // 18) * 6, HEIGHT_SLICE * 11), text="Create Game")
+    search_btn = draw_button(pos=((WIDTH // 18) * 12, HEIGHT_SLICE * 11), text="Search Games")
     if error:
         error_text = game_state_font.render(error, True, (200, 0, 0))
         SCREEN.blit(
-            error_text, error_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 15))
+            error_text, error_text.get_rect(
+                center=(WIDTH // 2, HEIGHT_SLICE * 15))
         )
-    quit_btn = pygame.Rect(0, 0, 200, 50)
-    quit_btn.center = (WIDTH // 2, HEIGHT_SLICE * 15)
-    pygame.draw.rect(SCREEN, FILL_COLOR, quit_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Quit", True, BG_COLOR),
-        game_state_font.render("Quit", True, BG_COLOR).get_rect(center=quit_btn.center),
-    )
+    quit_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 15), text="Quit", width=140)
     return create_btn, search_btn, input_box, join_btn, quit_btn
 
 
@@ -466,21 +442,16 @@ def draw_waiting():
     SCREEN.fill(BG_COLOR)
     title = title_font.render("Ultimate Tic Tac Toe", True, TEXT_COLOR)
     SCREEN.blit(title, title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 3)))
-    screen_title = title_font.render("Waiting for Opponent...", True, TEXT_COLOR)
+    screen_title = title_font.render(
+        "Waiting for Opponent...", True, TEXT_COLOR)
     SCREEN.blit(
-        screen_title, screen_title.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 6))
+        screen_title, screen_title.get_rect(
+            center=(WIDTH // 2, HEIGHT_SLICE * 6))
     )
     id_text = title_font.render(f"Game ID: {game_id}", True, TEXT_COLOR)
-    SCREEN.blit(id_text, id_text.get_rect(center=(WIDTH // 2, HEIGHT_SLICE * 9)))
-    cancel_btn = pygame.Rect(0, 0, 200, 50)
-    cancel_btn.center = (WIDTH // 2, HEIGHT_SLICE * 11)
-    pygame.draw.rect(SCREEN, FILL_COLOR, cancel_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Cancel", True, BG_COLOR),
-        game_state_font.render("Cancel", True, BG_COLOR).get_rect(
-            center=cancel_btn.center
-        ),
-    )
+    SCREEN.blit(id_text, id_text.get_rect(
+        center=(WIDTH // 2, HEIGHT_SLICE * 9)))
+    cancel_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 11), text="Cancel", width=140)
     return cancel_btn
 
 
@@ -496,6 +467,7 @@ def draw_searching():
             continue
         full_games.append(game)
 
+    full_games.sort(key=lambda k:k['spectators'], reverse=True)
     waiting_title = game_state_font.render(
         f"Waiting for player: {len(waiting_player_games)}", True, TEXT_COLOR
     )
@@ -509,23 +481,17 @@ def draw_searching():
     )
     SCREEN.blit(
         full_games_title,
-        full_games_title.get_rect(left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 2)),
+        full_games_title.get_rect(
+            left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 2)),
     )
 
     search_mode_text = game_state_font.render("Search for: ", True, TEXT_COLOR)
     SCREEN.blit(
         search_mode_text,
-        search_mode_text.get_rect(left=(WIDTH_SLICE * 13), top=(HEIGHT_SLICE * 1)),
+        search_mode_text.get_rect(
+            left=(WIDTH_SLICE * 13), top=(HEIGHT_SLICE * 1)),
     )
-    search_mode_btn = pygame.Rect(0, 0, 200, 50)
-    search_mode_btn.center = (WIDTH_SLICE * 15, HEIGHT_SLICE * 2)
-    pygame.draw.rect(SCREEN, FILL_COLOR, search_mode_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render(get_search_mode_text(search_mode_id), True, BG_COLOR),
-        game_state_font.render(get_search_mode_text(search_mode_id), True, BG_COLOR).get_rect(
-            center=search_mode_btn.center
-        ),
-    )
+    search_mode_btn = draw_button(pos=(WIDTH_SLICE * 15, HEIGHT_SLICE * 2), text=get_search_mode_text(search_mode_id))
     match search_mode_id:
         case 0:
             games_to_show = waiting_player_games
@@ -533,7 +499,7 @@ def draw_searching():
             games_to_show = full_games
         case 2:
             games_to_show = waiting_player_games + full_games
-
+    games_btns = {}
     for i, game in enumerate(games_to_show[:100]):
         match i // 25:
             case 0:
@@ -546,28 +512,29 @@ def draw_searching():
                 y_region = 14
             case _:
                 continue
+        match game["players"]:
+            case 1:
+                text = f"{game['game_id']}"
+            case _:
+                text = f"{game['game_id']}: {game['spectators']}"
+        region = (WIDTH_SLICE * y_region,
+                        HEIGHT_SLICE // 2 * ((i % 25) + 7))
         game_text = games_font.render(
-            f"{game['game_id']} - {get_search_mode_text(search_mode_id)}",
+            text,
             True,
             TEXT_COLOR,
         )
         SCREEN.blit(
             game_text,
             game_text.get_rect(
-                center=(WIDTH_SLICE * y_region, HEIGHT_SLICE // 2 * ((i % 25) + 7))
+                center=region
             ),
         )
+        game_btn = draw_button(pos=(region[0] + 80,region[1]), text="Join", width=40, height=20, font=games_font)
+        games_btns[game['game_id']] = game_btn
 
-    cancel_btn = pygame.Rect(0, 0, 200, 50)
-    cancel_btn.center = (WIDTH // 2, HEIGHT_SLICE * 17)
-    pygame.draw.rect(SCREEN, FILL_COLOR, cancel_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Cancel", True, BG_COLOR),
-        game_state_font.render("Cancel", True, BG_COLOR).get_rect(
-            center=cancel_btn.center
-        ),
-    )
-    return search_mode_btn, cancel_btn
+    cancel_btn = draw_button(pos=(WIDTH // 2, HEIGHT_SLICE * 17), text="Cancel", width=140)
+    return search_mode_btn, cancel_btn, games_btns
 
 
 def draw_game_window():
@@ -628,7 +595,8 @@ def draw_game_window():
     elif my_player == "SPECTATOR":
         spec_text = game_state_font.render("SPECTATING", True, TEXT_COLOR)
         SCREEN.blit(
-            spec_text, spec_text.get_rect(midright=(WIDTH - 20, HEIGHT_SLICE * 1))
+            spec_text, spec_text.get_rect(
+                midright=(WIDTH - 20, HEIGHT_SLICE * 1))
         )
 
     status_text_str, status_img = "", None
@@ -658,14 +626,20 @@ def draw_game_window():
     else:
         status = game_state_font.render(status_text_str, True, TEXT_COLOR)
         SCREEN.blit(status, status.get_rect(center=bottom_center))
-    exit_btn = pygame.Rect(0, 0, 120, 40)
-    exit_btn.center = (WIDTH - 80, HEIGHT_SLICE * 17)
-    pygame.draw.rect(SCREEN, FILL_COLOR, exit_btn, border_radius=5)
-    SCREEN.blit(
-        game_state_font.render("Exit", True, BG_COLOR),
-        game_state_font.render("Exit", True, BG_COLOR).get_rect(center=exit_btn.center),
-    )
+    exit_btn = draw_button(pos=(WIDTH - 80, HEIGHT_SLICE * 17), text="Exit", width=140)
     return exit_btn
+
+
+def draw_button(pos: (int, int), text: str, width: int=200, height: int=40, font: pygame=game_state_font):
+    btn = pygame.Rect(0, 0, width, height)
+    btn.center = pos
+    pygame.draw.rect(SCREEN, FILL_COLOR, btn, border_radius=5)
+    SCREEN.blit(
+        font.render(text, True, BG_COLOR),
+        font.render(
+            text, True, BG_COLOR).get_rect(center=btn.center),
+    )
+    return btn
 
 
 def reset_game():
@@ -685,7 +659,8 @@ def reset_game():
         search_mode_id
     board = game.generate_board()
     graphical_board = [
-        [[[[None, None] for _ in range(3)] for _ in range(3)] for _ in range(3)]
+        [[[[None, None] for _ in range(3)]
+          for _ in range(3)] for _ in range(3)]
         for _ in range(3)
     ]
     (
@@ -748,13 +723,17 @@ async def main():
                     reset_game()
 
         elif game_status == "SEARCHING":
-            search_mode_btn, cancel_btn = draw_searching()
+            search_mode_btn, cancel_btn, games_btns = draw_searching()
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if cancel_btn.collidepoint(event.pos):
                         reset_game()
                     if search_mode_btn.collidepoint(event.pos):
                         search_mode_id = (search_mode_id + 1) % 3
+                    for id, btn in games_btns.items():
+                        if btn.collidepoint(event.pos):
+                            if await perform_handshake("JOIN", id):
+                                asyncio.create_task(connect_and_listen())
 
         else:  # GAME or FINISHED
             exit_btn = draw_game_window()
@@ -774,7 +753,8 @@ async def main():
                             (y - BOARD_OFFSET) // CELL_SIZE,
                         )
                         if 0 <= col <= 2 and 0 <= row <= 2:
-                            rx, ry = (x - BOARD_OFFSET) % 230, (y - BOARD_OFFSET) % 230
+                            rx, ry = (x - BOARD_OFFSET) % 230, (y -
+                                                                BOARD_OFFSET) % 230
                             mc, mr = rx // MINI_CELL_SIZE, ry // MINI_CELL_SIZE
                             if mc <= 2 and mr <= 2:
                                 try:
