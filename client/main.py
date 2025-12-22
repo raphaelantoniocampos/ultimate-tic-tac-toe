@@ -173,6 +173,7 @@ class WSClient:
 
 # --- CONSTANTS ---
 WIDTH, HEIGHT = 900, 900
+WIDTH_SLICE = WIDTH // 18
 HEIGHT_SLICE = HEIGHT // 18
 BOARD_OFFSET = 100
 CELL_SIZE = 230
@@ -228,6 +229,7 @@ try:
 
     title_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 32)
     game_state_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 24)
+    games_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 14)
     input_font = pygame.font.Font("assets/0xProtoNerdFont-Regular.ttf", 28)
 except Exception as e:
     print(f"Warning: Could not load assets: {e}")
@@ -263,6 +265,8 @@ game_id = ""
 input_text = ""
 ws_client = None
 error = ""
+games = []
+search_mode_id = 0
 
 
 def get_player_img(player):
@@ -285,6 +289,55 @@ def get_winner_img(winner_player):
     return None
 
 
+async def perform_handshake(command, payload=None):
+    global game_id, my_player, game_status, error, ws_client, games
+    try:
+        uri = f"{PROTOCOL}://{HOST}:{PORT}"
+        ws_client = WSClient()
+        await ws_client.connect(uri)
+    except Exception as e:
+        print(f"DEBUG: Handshake connection error: {e}")
+        error = f"Conn failed: {e}"
+        return False
+    if command == "CREATE":
+        await ws_client.send(pickle.dumps(("CREATE",)))
+        try:
+            message = await ws_client.receive()
+            resp = pickle.loads(message)
+            game_id, my_player, game_status = resp[1], resp[2], "WAITING"
+            return True
+        except Exception as e:
+            error = f"Handshake recv err: {e}"
+
+    elif command == "JOIN":
+        await ws_client.send(pickle.dumps(("JOIN", payload)))
+        try:
+            message = await ws_client.receive()
+            resp = pickle.loads(message)
+            if resp[0] == "ERROR":
+                error = resp[1]
+                return False
+            elif resp[0] == "JOINED":
+                my_player, game_id, game_status = resp[1], payload, "GAME"
+                return True
+        except Exception as e:
+            error = f"Handshake recv err: {e}"
+
+    elif command == "FETCH":
+        await ws_client.send(pickle.dumps(("FETCH",)))
+        try:
+            message = await ws_client.receive()
+            resp = pickle.loads(message)
+            games, game_status = resp[1], "SEARCHING"
+            return True
+        except Exception as e:
+            error = f"Handshake recv err: {e}"
+    if ws_client:
+        await ws_client.close()
+        ws_client = None
+    return False
+
+
 async def connect_and_listen():
     global \
         game_status, \
@@ -294,7 +347,9 @@ async def connect_and_listen():
         current_restriction, \
         winner, \
         error, \
-        ws_client
+        ws_client, \
+        games
+
     if not ws_client:
         return
     try:
@@ -429,6 +484,92 @@ def draw_waiting():
     return cancel_btn
 
 
+def draw_searching():
+    global games, search_mode
+
+    SCREEN.fill(BG_COLOR)
+    waiting_player_games = []
+    full_games = []
+    for game in games:
+        if game["players"] == 1:
+            waiting_player_games.append(game)
+            continue
+        full_games.append(game)
+
+    waiting_title = game_state_font.render(
+        f"Waiting for player: {len(waiting_player_games)}", True, TEXT_COLOR
+    )
+    SCREEN.blit(
+        waiting_title,
+        waiting_title.get_rect(left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 1)),
+    )
+
+    full_games_title = game_state_font.render(
+        f"In progress: {len(full_games)}", True, TEXT_COLOR
+    )
+    SCREEN.blit(
+        full_games_title,
+        full_games_title.get_rect(left=(WIDTH_SLICE * 1), top=(HEIGHT_SLICE * 2)),
+    )
+
+    search_mode_text = game_state_font.render("Search for: ", True, TEXT_COLOR)
+    SCREEN.blit(
+        search_mode_text,
+        search_mode_text.get_rect(left=(WIDTH_SLICE * 13), top=(HEIGHT_SLICE * 1)),
+    )
+    search_mode_btn = pygame.Rect(0, 0, 200, 50)
+    search_mode_btn.center = (WIDTH_SLICE * 15, HEIGHT_SLICE * 2)
+    pygame.draw.rect(SCREEN, FILL_COLOR, search_mode_btn, border_radius=5)
+    SCREEN.blit(
+        game_state_font.render(get_search_mode_text(search_mode_id), True, BG_COLOR),
+        game_state_font.render(get_search_mode_text(search_mode_id), True, BG_COLOR).get_rect(
+            center=search_mode_btn.center
+        ),
+    )
+    match search_mode_id:
+        case 0:
+            games_to_show = waiting_player_games
+        case 1:
+            games_to_show = full_games
+        case 2:
+            games_to_show = waiting_player_games + full_games
+
+    for i, game in enumerate(games_to_show[:100]):
+        match i // 25:
+            case 0:
+                y_region = 2
+            case 1:
+                y_region = 6
+            case 2:
+                y_region = 10
+            case 3:
+                y_region = 14
+            case _:
+                continue
+        game_text = games_font.render(
+            f"{game['game_id']} - {get_search_mode_text(search_mode_id)}",
+            True,
+            TEXT_COLOR,
+        )
+        SCREEN.blit(
+            game_text,
+            game_text.get_rect(
+                center=(WIDTH_SLICE * y_region, HEIGHT_SLICE // 2 * ((i % 25) + 7))
+            ),
+        )
+
+    cancel_btn = pygame.Rect(0, 0, 200, 50)
+    cancel_btn.center = (WIDTH // 2, HEIGHT_SLICE * 17)
+    pygame.draw.rect(SCREEN, FILL_COLOR, cancel_btn, border_radius=5)
+    SCREEN.blit(
+        game_state_font.render("Cancel", True, BG_COLOR),
+        game_state_font.render("Cancel", True, BG_COLOR).get_rect(
+            center=cancel_btn.center
+        ),
+    )
+    return search_mode_btn, cancel_btn
+
+
 def draw_game_window():
     SCREEN.fill(BG_COLOR)
     SCREEN.blit(BOARD_IMG, (64, 64))
@@ -527,44 +668,6 @@ def draw_game_window():
     return exit_btn
 
 
-async def perform_handshake(command, payload=None):
-    global game_id, my_player, game_status, error, ws_client
-    try:
-        uri = f"{PROTOCOL}://{HOST}:{PORT}"
-        ws_client = WSClient()
-        await ws_client.connect(uri)
-    except Exception as e:
-        print(f"DEBUG: Handshake connection error: {e}")
-        error = f"Conn failed: {e}"
-        return False
-    if command == "CREATE":
-        await ws_client.send(pickle.dumps(("CREATE",)))
-        try:
-            message = await ws_client.receive()
-            resp = pickle.loads(message)
-            game_id, my_player, game_status = resp[1], resp[2], "WAITING"
-            return True
-        except Exception as e:
-            error = f"Handshake recv err: {e}"
-    elif command == "JOIN":
-        await ws_client.send(pickle.dumps(("JOIN", payload)))
-        try:
-            message = await ws_client.receive()
-            resp = pickle.loads(message)
-            if resp[0] == "ERROR":
-                error = resp[1]
-                return False
-            elif resp[0] == "JOINED":
-                my_player, game_id, game_status = resp[1], payload, "GAME"
-                return True
-        except Exception as e:
-            error = f"Handshake recv err: {e}"
-    if ws_client:
-        await ws_client.close()
-        ws_client = None
-    return False
-
-
 def reset_game():
     global \
         board, \
@@ -577,7 +680,9 @@ def reset_game():
         game_id, \
         input_text, \
         error, \
-        ws_client
+        ws_client, \
+        games, \
+        search_mode_id
     board = game.generate_board()
     graphical_board = [
         [[[[None, None] for _ in range(3)] for _ in range(3)] for _ in range(3)]
@@ -592,14 +697,21 @@ def reset_game():
         game_id,
         error,
         input_text,
-    ) = "X", None, None, "MENU", None, "", "", ""
+        games,
+        search_mode_id,
+    ) = "X", None, None, "MENU", None, "", "", "", {}, 0
     if ws_client:
         asyncio.create_task(ws_client.close())
         ws_client = None
 
 
+def get_search_mode_text(index):
+    search_modes = ["Waiting", "In Progress", "All"]
+    return search_modes[index]
+
+
 async def main():
-    global game_status, input_text, my_player, game_id
+    global game_status, input_text, my_player, game_id, search_mode_id
     running = True
     while running:
         events = pygame.event.get()
@@ -614,8 +726,7 @@ async def main():
                         if await perform_handshake("CREATE"):
                             asyncio.create_task(connect_and_listen())
                     if search_btn.collidepoint(event.pos):
-                        print("search")
-                        # asyncio.create_task(connect_and_listen())
+                        await perform_handshake("FETCH")
                     elif join_btn.collidepoint(event.pos):
                         if input_text:
                             if await perform_handshake("JOIN", input_text):
@@ -635,6 +746,16 @@ async def main():
                     event.pos
                 ):
                     reset_game()
+
+        elif game_status == "SEARCHING":
+            search_mode_btn, cancel_btn = draw_searching()
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if cancel_btn.collidepoint(event.pos):
+                        reset_game()
+                    if search_mode_btn.collidepoint(event.pos):
+                        search_mode_id = (search_mode_id + 1) % 3
+
         else:  # GAME or FINISHED
             exit_btn = draw_game_window()
             for event in events:

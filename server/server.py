@@ -71,6 +71,13 @@ class GameSession:
             return "SPECTATOR"
         return None
 
+    def to_dict(self):
+        return {
+            "game_id": self.game_id,
+            "players": len(self.players),
+            "spectators": len(self.spectators),
+        }
+
 
 async def handle_client(websocket):
     print(f"New connection from {websocket.remote_address}")
@@ -96,6 +103,21 @@ async def handle_client(websocket):
             await websocket.send(pickle.dumps(("CREATED", game_id, "X")))
             print(f"Game {game_id} created")
 
+        elif command == "FETCH":
+            send_games = [game.to_dict() for game in games.values()]
+
+            for i in range(220):
+                send_games.append(
+                    {
+                        "game_id": generate_id(6),
+                        "players": random.randint(1, 2),
+                        "spectators": 0,
+                    }
+                )
+            print(send_games)
+            await websocket.send(
+                pickle.dumps(("LISTED", send_games))
+            )
         elif command == "JOIN":
             game_id = request[1]
             if game_id not in games:
@@ -186,9 +208,10 @@ async def handle_client(websocket):
                 if current_game.game_id in games:
                     del games[current_game.game_id]
 
+
 def generate_id(length):
-   letters = string.ascii_lowercase
-   return ''.join(random.choice(letters) for i in range(length)).upper()
+    letters = string.ascii_lowercase
+    return "".join(random.choice(letters) for i in range(length)).upper()
 
 
 async def main():
