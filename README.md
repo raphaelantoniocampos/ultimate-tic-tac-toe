@@ -4,7 +4,7 @@ A multiplayer implementation of **Ultimate Tic-Tac-Toe** built with Python and P
 
 ![Ultimate Tic-Tac-Toe Gameplay](client/assets/game.png)
 
-![🎥 Video Demo](https://www.youtube.com/watch?v=pbTO0w-fWKE)
+![🎥 Video Demo](https://youtu.be/15joFm8kI7Y?si=zevaNHmHZbpb3HoP)
 
 ## 🎮 What is Ultimate Tic-Tac-Toe?
 
