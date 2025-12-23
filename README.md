@@ -4,7 +4,7 @@ A multiplayer implementation of **Ultimate Tic-Tac-Toe** built with Python and P
 
 ![Ultimate Tic-Tac-Toe Gameplay](client/assets/game.png)
 
-![🎥 Video Demo](https://youtu.be/15joFm8kI7Y?si=zevaNHmHZbpb3HoP)
+[🎥 Video Demo](https://youtu.be/15joFm8kI7Y?si=zevaNHmHZbpb3HoP)
 
 ## 🎮 What is Ultimate Tic-Tac-Toe?
 
@@ -91,9 +91,13 @@ The project is configured for deployment to **Fly.io**.
 ## ⭐ AI Usage
 
 Artificial Intelligence Tools: Gemini 3.0 Pro and Flash in planning mode; 
+
 Architectural Transition: AI was used to consult on the transition from standard TCP sockets to WebSockets to ensure browser compatibility via the Emscripten toolchain;
+
 Environment Configuration: AI was used to resolve platform-specific import issues for WASM/Pygbag (Emscripten), specifically regarding the adjustment of sys.path and the js module bridge;
+
 Networking Logic: AI suggested the logic for protocol switching (switching from ws to wss) by accessing the browser's window.location parameters to prevent security blocks in HTTPS environments;
+
 Writing—Review & Editing: AI was used to refine the documentation and ensure the technical explanations of the network bridge were clear and concise;
 
 ## 📜 License
